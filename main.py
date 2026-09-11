@@ -191,3 +191,10 @@ class responseSchema(BaseModel):
 #     users.append(new_user)
 #     return new_user
 
+
+
+# Task : get all users
+@app.get("/users")
+def get_all_posts():
+    return users
+
