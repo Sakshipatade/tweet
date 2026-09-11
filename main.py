@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI()
@@ -198,3 +199,10 @@ class responseSchema(BaseModel):
 def get_all_posts():
     return users
 
+# Task : get specific user by its id
+@app.get("/users/{id}")
+def get_user(id:int):
+    for user in users:
+        if user["user_id"]==id:
+            return user
+    return JSONResponse(content={"error": "User not found"}, status_code=status.HTTP_404_NOT_FOUND)
