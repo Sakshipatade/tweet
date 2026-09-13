@@ -110,76 +110,105 @@ posts = [
 ]
 
 comments = [
+
     {
         "comment_id": 101,
-        "post_id": 1,
+        "user_id": 2,       # Vaishnavi
+        "post_id": 1,       # Sakshi's post
         "comment_content": "Good Information"
     },
+
     {
         "comment_id": 102,
-        "post_id": 2,
+        "user_id": 3,       # Priya
+        "post_id": 2,       # Sakshi's post
         "comment_content": "Helpful"
     },
+
     {
         "comment_id": 103,
-        "post_id": 3,
+        "user_id": 1,       # Sakshi
+        "post_id": 3,       # Vaishnavi's post
         "comment_content": "Yes, You are right"
     },
+
     {
         "comment_id": 104,
-        "post_id": 4,
+        "user_id": 4,       # Neha
+        "post_id": 4,       # Vaishnavi's post
         "comment_content": "Wow"
     },
+
     {
         "comment_id": 105,
-        "post_id": 5,
+        "user_id": 5,       # Rohan
+        "post_id": 5,       # Vaishnavi's post
         "comment_content": "Absolutely"
     },
+
     {
         "comment_id": 106,
-        "post_id": 6,
+        "user_id": 2,       # Vaishnavi
+        "post_id": 6,       # Priya's post
         "comment_content": "I agree"
     },
+
     {
         "comment_id": 107,
-        "post_id": 7,
+        "user_id": 4,       # Neha
+        "post_id": 7,       # Priya's post
         "comment_content": "Very true"
     },
+
     {
         "comment_id": 108,
-        "post_id": 8,
+        "user_id": 1,       # Sakshi
+        "post_id": 8,       # Priya's post
         "comment_content": "Nice explanation"
     },
+
     {
         "comment_id": 109,
-        "post_id": 9,
+        "user_id": 5,       # Rohan
+        "post_id": 9,       # Neha's post
         "comment_content": "That's true"
     },
+
     {
         "comment_id": 110,
-        "post_id": 10,
+        "user_id": 3,       # Priya
+        "post_id": 10,      # Neha's post
         "comment_content": "I walk every day"
     },
+
     {
         "comment_id": 111,
-        "post_id": 11,
+        "user_id": 1,       # Sakshi
+        "post_id": 11,      # Neha's post
         "comment_content": "Good reminder"
     },
+
     {
         "comment_id": 112,
-        "post_id": 12,
+        "user_id": 4,       # Neha
+        "post_id": 12,      # Rohan's post
         "comment_content": "Very useful"
     },
+
     {
         "comment_id": 113,
-        "post_id": 13,
+        "user_id": 2,       # Vaishnavi
+        "post_id": 13,      # Rohan's post
         "comment_content": "Yes, Git is important"
     },
+
     {
         "comment_id": 114,
-        "post_id": 14,
+        "user_id": 3,       # Priya
+        "post_id": 14,      # Rohan's post
         "comment_content": "Absolutely"
     }
+
 ]
 
 # for user in users:
@@ -206,18 +235,6 @@ class responseSchema(BaseModel):
     user_id:int
     username:str
     posts:postSchema
-
-# API : create new user
-@app.post("/users")
-def create_user(user:requestSchema):
-    new_user = user.model_dump()
-     
-    for user in users:
-        if user["user_id"] == user.user_id:
-            return {"message" : "User already exists"}
-        
-    users.append(new_user)
-    return new_user
 
 
 
