@@ -4,154 +4,181 @@ from pydantic import BaseModel, Field
 
 app = FastAPI()
 
-
 users = [
     {
         "user_id": 1,
         "username": "sakshi",
-        "password": "sakshi123",
-        "posts": [
-            {
-                "post_id": 1,
-                "content": "FastAPI is a framework of python",
-                "comment": {
-                    "comment_id": 101,
-                    "comment_content": "Good Information"
-                }
-            },
-            {
-                "post_id": 2,
-                "content": "Flask is a framework of python",
-                "comment": {
-                    "comment_id": 102,
-                    "comment_content": "Helpful"
-                }
-            }
-        ]
+        "password": "sakshi123"
     },
     {
         "user_id": 2,
         "username": "vaishnavi",
-        "password": "vaishnavi123",
-        "posts": [
-            {
-                "post_id": 1,
-                "content": "Swimming is better than hiking",
-                "comment": {
-                    "comment_id": 103,
-                    "comment_content": "Yes, You are right"
-                }
-            },
-            {
-                "post_id": 2,
-                "content": "Sun is rising",
-                "comment": {
-                    "comment_id": 104,
-                    "comment_content": "Wow"
-                }
-            },
-            {
-                "post_id": 3,
-                "content": "Reading books improves knowledge",
-                "comment": {
-                    "comment_id": 105,
-                    "comment_content": "Absolutely"
-                }
-            }
-        ]
+        "password": "vaishnavi123"
     },
     {
         "user_id": 3,
         "username": "priya",
-        "password": "priya123",
-        "posts": [
-            {
-                "post_id": 1,
-                "content": "Python is easy to learn",
-                "comment": {
-                    "comment_id": 106,
-                    "comment_content": "I agree"
-                }
-            },
-            {
-                "post_id": 2,
-                "content": "Coding requires regular practice",
-                "comment": {
-                    "comment_id": 107,
-                    "comment_content": "Very true"
-                }
-            },
-            {
-                "post_id": 3,
-                "content": "APIs help applications communicate",
-                "comment": {
-                    "comment_id": 108,
-                    "comment_content": "Nice explanation"
-                }
-            }
-        ]
+        "password": "priya123"
     },
     {
         "user_id": 4,
         "username": "neha",
-        "password": "neha123",
-        "posts": [
-            {
-                "post_id": 1,
-                "content": "Exercise keeps our body healthy",
-                "comment": {
-                    "comment_id": 109,
-                    "comment_content": "That's true"
-                }
-            },
-            {
-                "post_id": 2,
-                "content": "Walking is good for health",
-                "comment": {
-                    "comment_id": 110,
-                    "comment_content": "I walk every day"
-                }
-            },
-            {
-                "post_id": 3,
-                "content": "Drinking enough water is important",
-                "comment": {
-                    "comment_id": 111,
-                    "comment_content": "Good reminder"
-                }
-            }
-        ]
+        "password": "neha123"
     },
     {
         "user_id": 5,
         "username": "rohan",
-        "password": "rohan123",
-        "posts": [
-            {
-                "post_id": 1,
-                "content": "Docker makes application deployment easier",
-                "comment": {
-                    "comment_id": 112,
-                    "comment_content": "Very useful"
-                }
-            },
-            {
-                "post_id": 2,
-                "content": "Git is useful for version control",
-                "comment": {
-                    "comment_id": 113,
-                    "comment_content": "Yes, Git is important"
-                }
-            },
-            {
-                "post_id": 3,
-                "content": "Linux is widely used by developers",
-                "comment": {
-                    "comment_id": 114,
-                    "comment_content": "Absolutely"
-                }
-            }
-        ]
+        "password": "rohan123"
+    }
+]
+
+posts = [
+    {
+        "post_id": 1,
+        "user_id": 1,
+        "content": "FastAPI is a framework of python"
+    },
+    {
+        "post_id": 2,
+        "user_id": 1,
+        "content": "Flask is a framework of python"
+    },
+
+    {
+        "post_id": 3,
+        "user_id": 2,
+        "content": "Swimming is better than hiking"
+    },
+    {
+        "post_id": 4,
+        "user_id": 2,
+        "content": "Sun is rising"
+    },
+    {
+        "post_id": 5,
+        "user_id": 2,
+        "content": "Reading books improves knowledge"
+    },
+
+    {
+        "post_id": 6,
+        "user_id": 3,
+        "content": "Python is easy to learn"
+    },
+    {
+        "post_id": 7,
+        "user_id": 3,
+        "content": "Coding requires regular practice"
+    },
+    {
+        "post_id": 8,
+        "user_id": 3,
+        "content": "APIs help applications communicate"
+    },
+
+    {
+        "post_id": 9,
+        "user_id": 4,
+        "content": "Exercise keeps our body healthy"
+    },
+    {
+        "post_id": 10,
+        "user_id": 4,
+        "content": "Walking is good for health"
+    },
+    {
+        "post_id": 11,
+        "user_id": 4,
+        "content": "Drinking enough water is important"
+    },
+
+    {
+        "post_id": 12,
+        "user_id": 5,
+        "content": "Docker makes application deployment easier"
+    },
+    {
+        "post_id": 13,
+        "user_id": 5,
+        "content": "Git is useful for version control"
+    },
+    {
+        "post_id": 14,
+        "user_id": 5,
+        "content": "Linux is widely used by developers"
+    }
+]
+
+comments = [
+    {
+        "comment_id": 101,
+        "post_id": 1,
+        "comment_content": "Good Information"
+    },
+    {
+        "comment_id": 102,
+        "post_id": 2,
+        "comment_content": "Helpful"
+    },
+    {
+        "comment_id": 103,
+        "post_id": 3,
+        "comment_content": "Yes, You are right"
+    },
+    {
+        "comment_id": 104,
+        "post_id": 4,
+        "comment_content": "Wow"
+    },
+    {
+        "comment_id": 105,
+        "post_id": 5,
+        "comment_content": "Absolutely"
+    },
+    {
+        "comment_id": 106,
+        "post_id": 6,
+        "comment_content": "I agree"
+    },
+    {
+        "comment_id": 107,
+        "post_id": 7,
+        "comment_content": "Very true"
+    },
+    {
+        "comment_id": 108,
+        "post_id": 8,
+        "comment_content": "Nice explanation"
+    },
+    {
+        "comment_id": 109,
+        "post_id": 9,
+        "comment_content": "That's true"
+    },
+    {
+        "comment_id": 110,
+        "post_id": 10,
+        "comment_content": "I walk every day"
+    },
+    {
+        "comment_id": 111,
+        "post_id": 11,
+        "comment_content": "Good reminder"
+    },
+    {
+        "comment_id": 112,
+        "post_id": 12,
+        "comment_content": "Very useful"
+    },
+    {
+        "comment_id": 113,
+        "post_id": 13,
+        "comment_content": "Yes, Git is important"
+    },
+    {
+        "comment_id": 114,
+        "post_id": 14,
+        "comment_content": "Absolutely"
     }
 ]
 
@@ -180,17 +207,17 @@ class responseSchema(BaseModel):
     username:str
     posts:postSchema
 
-# # API : create new user
-# @app.post("/users")
-# def create_user(user:requestSchema):
-#     new_user = user.model_dump()
+# API : create new user
+@app.post("/users")
+def create_user(user:requestSchema):
+    new_user = user.model_dump()
      
-#     for user in users:
-#         if user["user_id"] == user.user_id:
-#             return {"message" : "User already exists"}
+    for user in users:
+        if user["user_id"] == user.user_id:
+            return {"message" : "User already exists"}
         
-#     users.append(new_user)
-#     return new_user
+    users.append(new_user)
+    return new_user
 
 
 
