@@ -61,3 +61,16 @@ def getUser(id:int):
     return JSONResponse(content = "user not found", status_code = 404)
 
 
+# Delete user 
+@app.delete('/users')
+def deleteUser(request:Request):
+    token = request.headers.get('Authorization')
+    token_type, token_id = token.split('-')
+    token = int(token_id)
+    # print(token_type, token_id)
+    for user in USERS:
+        if user.get("user_id") == token:
+            print('hii')
+            USERS.remove(user)
+            return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
+    return JSONResponse(content='Falied to delete user', status_code=status.HTTP_404_NOT_FOUND)
