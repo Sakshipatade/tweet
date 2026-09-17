@@ -20,11 +20,6 @@ async def createUser(request:Request):
     USERS.append(body)
     return USERS
 
-    # if type(body.get("username")) is str:
-    #     USERS.append(body)
-    # return JSONResponse(content={"msg" : "user created"}, status_code=status.HTTP_201_CREATED)
-
-
 # get all users
 @app.get("/users")
 def getUsers():
@@ -133,7 +128,7 @@ def deletePost(request:Request, post_id:int = Query()):
    for tk in TOKENS:
        if tk.get("token") == token_value:
            for post in POSTS:
-               if post.get("user_id") == tk.get("user_id"):
+               if post.get("post_id") == post_id:
                    POSTS.remove(post)
-                   return JSONResponse(content="post deleted..", status_code=status.HTTP_200_OK)
-        
+
+          
