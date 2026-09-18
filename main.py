@@ -96,10 +96,6 @@ def deleteUser(request:Request):
     return JSONResponse(content='Falied to delete user', status_code=status.HTTP_404_NOT_FOUND)
 
 
-# # Update user
-# @app.put("/users/{id}")
-# def updateUserInfo(id:int):
-
 
 @app.get("/user/posts")
 def getUserPosts(request:Request):
