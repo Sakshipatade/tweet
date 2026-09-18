@@ -31,7 +31,7 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
     for user in USERS:
         if user.get('username') == username:
             if user.get('password') == password:
-                token = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+                token = ''.join(random.choices(string.ascii_letters + string.digits, k=6)) #generating random token
                 TOKENS.append({"token":token, "user_id":user.get("user_id")})
                 return JSONResponse(content={"msg":"login successful", "token": f'Token-{token}'}, status_code=status.HTTP_200_OK)
             else:
