@@ -127,6 +127,8 @@ def deletePost(request:Request, post_id:int = Query()):
 
 
 """  Things to do:
+
+
 1. Fix your authentication logic first in getUser
 
     Before adding more endpoints, make one reusable function such as:
