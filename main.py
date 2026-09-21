@@ -40,8 +40,6 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
 
 
 
-
-
 # profile 
 @app.get("/profile")
 async def getProfile(request:Request):
