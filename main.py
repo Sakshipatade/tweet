@@ -220,6 +220,8 @@ def deletePost(request:Request, post_id:int = Query()):
 
     This is the authorization part.
 
+    
+
 4. Add comments CRUD
     Your COMMENTS structure is already correct for this.
 
