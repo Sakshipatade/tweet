@@ -40,7 +40,7 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
 
 
 
-# profile 
+# getting profile of the user who is logged In
 @app.get("/profile")
 async def getProfile(request:Request):
     # headers = request.headers
