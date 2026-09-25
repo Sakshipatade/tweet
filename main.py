@@ -18,7 +18,7 @@ async def createUser(request:Request):
     # print(new_user_id)
     body["user_id"] = new_user_id
     USERS.append(body)
-    return USERS
+    return USERS[-1] #returning the last new record added to list
 
 # get all users
 @app.get("/users")
@@ -47,14 +47,14 @@ async def getProfile(request:Request):
     token = request.headers.get('Authorization')
     token_type, token_id = token.split('-')
 
-    if token_type == "T":
-        token_id=int(token_id)
-        for user in USERS:
-            # print(user, token_id)
-            # print(token_id == user.get("user_id"))
-            if token_id == user.get("user_id"):
-                return user
-        return JSONResponse(content="Invalid token", status_code=status.HTTP_401_UNAUTHORIZED)
+    # if token_type == "T":
+    #     token_id=int(token_id)
+    #     for user in USERS:
+    #         # print(user, token_id)
+    #         # print(token_id == user.get("user_id"))
+    #         if token_id == user.get("user_id"):
+    #             return user
+    #     return JSONResponse(content="Invalid token", status_code=status.HTTP_401_UNAUTHORIZED)
 
     if token_type == "Token":
         # print(token_type, "received", token)
@@ -77,7 +77,7 @@ def getUser(id:int):
         if user.get("user_id") == id:
             return user
 
-    return JSONResponse(content = "user not found", status_code = 404)
+    return JSONResponse(content = {"error" : "user not found"}, status_code = 404)
 
 
 # Delete user 
@@ -85,12 +85,27 @@ def getUser(id:int):
 def deleteUser(request:Request):
     token = request.headers.get('Authorization')
     token_type, token_id = token.split('-')
-    token = int(token_id)
-    # print(token_type, token_id)
-    for user in USERS:
-        if user.get("user_id") == token:
-            USERS.remove(user)
+    print(token_type)
+    print(token_id)
+    
+    token_user_id=None
+    for t in TOKENS:
+        if t.get("token") == token_id:
+            token_user_id = t.get("user_id")
+    if token_user_id is None:
+        return JSONResponse(content="", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    for u in USERS:
+        if token_user_id == u.get("user_id"):
+            USERS.remove(u)
             return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
+
+    # for user in USERS:
+    #     for tk in TOKENS:
+    #         if token_id == tk.get("token"):
+    #             if user.get("user_id") == tk.get("user_id"):
+    #                 USERS.remove(user)
+    #             return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
     return JSONResponse(content='Falied to delete user', status_code=status.HTTP_404_NOT_FOUND)
 
 
