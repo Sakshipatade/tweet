@@ -123,23 +123,22 @@ def getUserPosts(request:Request):
                 if post.get("user_id") == tk.get("user_id"):
                     user_posts.append(post)
             return user_posts
-                #     print("hiii")
-                # return post
 
 
 @app.delete("/user/posts")
 def deletePost(request:Request, post_id:int = Query()):
-#    print(post_id, type(post_id))
-#    print("hello")
    token = request.headers.get("Authorization")
    token_type, token_value = token.split("-")
 
-   for tk in TOKENS:
-       if tk.get("token") == token_value:
-           for post in POSTS:
-               if post.get("post_id") == post_id:
-                   POSTS.remove(post)
 
+   for tk in TOKENS:
+        if tk.get("token") == token_value:
+            for post in POSTS:
+                if post.get("post_id") == post_id:
+                   POSTS.remove(post)
+                   return JSONResponse(content={"msg": "Post deleted.."}, status_code=status.HTTP_200_OK)
+            return JSONResponse(content={"msg":"Post not found"}, status_code=status.HTTP_404_NOT_FOUND)
+   return JSONResponse(content={"msg":"Unauthorized"}, status_code=status.HTTP_401_UNAUTHORIZED)
 
 """  Things to do:
 
