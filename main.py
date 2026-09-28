@@ -80,7 +80,7 @@ def getUser(id:int):
     return JSONResponse(content = {"error" : "user not found"}, status_code = 404)
 
 
-# Delete user 
+# Delete user only if he is authenticated
 @app.delete('/users')
 def deleteUser(request:Request):
     token = request.headers.get('Authorization')
@@ -109,7 +109,7 @@ def deleteUser(request:Request):
     return JSONResponse(content='Falied to delete user', status_code=status.HTTP_404_NOT_FOUND)
 
 
-
+# getting all posts of the user who is loggedIn
 @app.get("/user/posts")
 def getUserPosts(request:Request):
     token = request.headers.get("Authorization")
@@ -124,7 +124,17 @@ def getUserPosts(request:Request):
                     user_posts.append(post)
             return user_posts
 
+# getting all posts
+@app.get("/posts")
+def getAllPosts(request:Request):
+    token = request.headers.get("Authorization")
+    token_type, token_id = token.split("-")
 
+    for tk in TOKENS:
+        if tk.get("token") == token_id:
+            return POSTS
+
+# deleting post of the user who is loggedIn
 @app.delete("/user/posts")
 def deletePost(request:Request, post_id:int = Query()):
    token = request.headers.get("Authorization")
