@@ -3,9 +3,22 @@ from fastapi.responses import JSONResponse
 from tweet.data import USERS, COMMENTS, POSTS, TOKENS
 import json, random, string
 
-
-
 app = FastAPI()
+
+# Authentication logic
+def getCurrentUser(request:Request):
+    token = request.headers.get("Authorization")
+    token_type, token_id = token.split("-")
+
+    if token_type == "Token":
+
+        for tk in TOKENS:
+            if tk.get("token") == token_id:
+
+                for user in USERS:
+                    if user.get("user_id") == tk.get("user_id"):
+                        return user
+        return None
 
 
 # create a new user
@@ -20,10 +33,7 @@ async def createUser(request:Request):
     USERS.append(body)
     return USERS[-1] #returning the last new record added to list
 
-# get all users
-@app.get("/users")
-def getUsers():
-    return USERS
+
 
 # login
 @app.post("/login")
@@ -40,84 +50,90 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
 
 
 
-# getting profile of the user who is logged In
+
+# get all other users only after you loggedIn
+@app.get("/users")
+def getUsers(request:Request):
+    user = getCurrentUser(request)
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
+    return USERS
+
+
+
+
+# getting profile of himself of the user who is logged In
 @app.get("/profile")
 async def getProfile(request:Request):
-    # headers = request.headers
-    token = request.headers.get('Authorization')
-    token_type, token_id = token.split('-')
-
-    # if token_type == "T":
-    #     token_id=int(token_id)
-    #     for user in USERS:
-    #         # print(user, token_id)
-    #         # print(token_id == user.get("user_id"))
-    #         if token_id == user.get("user_id"):
-    #             return user
-    #     return JSONResponse(content="Invalid token", status_code=status.HTTP_401_UNAUTHORIZED)
-
-    if token_type == "Token":
-        # print(token_type, "received", token)
-        for tk in TOKENS:
-            # print(tk.get('token') == token_id)
-            # print(token_id)
-            # print(tk)
-            if tk.get("token") == token_id:
-                for user in USERS:
-                    if user.get("user_id") == tk.get("user_id"):
-                        return user
+    user = getCurrentUser(request)
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
+    return user
 
 
-
-
-# Get user by his id
+# Get/Search user by his id only after u are loggedIN 
 @app.get('/users/{id}')
-def getUser(id:int):
-    for user in USERS:
-        if user.get("user_id") == id:
-            return user
+def getUser(request:Request,id:int):
+    user = getCurrentUser(request)
+    print(user)
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
+
+    for u in USERS:
+        if u.get("user_id") == id:
+            return u
 
     return JSONResponse(content = {"error" : "user not found"}, status_code = 404)
 
 
-# Delete user only if he is authenticated
-@app.delete('/users')
-def deleteUser(request:Request):
-    token = request.headers.get('Authorization')
-    token_type, token_id = token.split('-')
-    print(token_type)
-    print(token_id)
+# Delete user only if he is authenticated Or delete me by me only
+@app.delete('/users/{id}')
+def deleteUser(request:Request,id:int):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+    else:
+        if user.get("user_id") == id:
+            USERS.remove(user)
+            return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
+
+    # token_user_id=None
+    # token = request.headers.get('Authorization')
+    # token_type, token_id = token.split('-')
+
     
-    token_user_id=None
-    for t in TOKENS:
-        if t.get("token") == token_id:
-            token_user_id = t.get("user_id")
-    if token_user_id is None:
-        return JSONResponse(content="", status_code=status.HTTP_401_UNAUTHORIZED)
+    # for t in TOKENS:
+    #     if t.get("token") == token_id:
+    #         token_user_id = t.get("user_id")
 
-    for u in USERS:
-        if token_user_id == u.get("user_id"):
-            USERS.remove(u)
-            return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
 
-    # for user in USERS:
-    #     for tk in TOKENS:
-    #         if token_id == tk.get("token"):
-    #             if user.get("user_id") == tk.get("user_id"):
-    #                 USERS.remove(user)
-    #             return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
-    return JSONResponse(content='Falied to delete user', status_code=status.HTTP_404_NOT_FOUND)
+    # if token_user_id is None:
+    #     return JSONResponse(content="", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    # for u in USERS:
+    #     if token_user_id == u.get("user_id"):
+    #         USERS.remove(u)
+    #         return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
+
+    # # for user in USERS:
+    # #     for tk in TOKENS:
+    # #         if token_id == tk.get("token"):
+    # #             if user.get("user_id") == tk.get("user_id"):
+    # #                 USERS.remove(user)
+    # #             return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
+    # return JSONResponse(content='Falied to delete user', status_code=status.HTTP_404_NOT_FOUND)
 
 
 # getting all posts of the user who is loggedIn
 @app.get("/user/posts")
 def getUserPosts(request:Request):
     token = request.headers.get("Authorization")
-    token_type, token_value = token.split("-")
+    token_type, token_id = token.split("-")
     # print(token_type, token_value)
 
     for tk in TOKENS:
-        if tk.get("token") == token_value:
+        if tk.get("token") == token_id:
             user_posts = []
             for post in POSTS:
                 if post.get("user_id") == tk.get("user_id"):
@@ -135,8 +151,8 @@ def getAllPosts(request:Request):
             return POSTS
 
 # deleting post of the user who is loggedIn
-@app.delete("/user/posts")
-def deletePost(request:Request, post_id:int = Query()):
+@app.delete("/posts/{id}")
+def deletePost(request:Request, id:int):
    token = request.headers.get("Authorization")
    token_type, token_value = token.split("-")
 
@@ -144,50 +160,22 @@ def deletePost(request:Request, post_id:int = Query()):
    for tk in TOKENS:
         if tk.get("token") == token_value:
             for post in POSTS:
-                if post.get("post_id") == post_id:
+                if post.get("post_id") == id:
                    POSTS.remove(post)
                    return JSONResponse(content={"msg": "Post deleted.."}, status_code=status.HTTP_200_OK)
             return JSONResponse(content={"msg":"Post not found"}, status_code=status.HTTP_404_NOT_FOUND)
    return JSONResponse(content={"msg":"Unauthorized"}, status_code=status.HTTP_401_UNAUTHORIZED)
 
+
+
+
+
+
+
+
+
+
 """  Things to do:
-
-
-1. Fix your authentication logic first in getUser
-
-    Before adding more endpoints, make one reusable function such as:
-
-    def get_current_user(request: Request):
-        ...
-
-    Its job should be:
-
-    Authorization header
-            ↓
-    extract token
-            ↓
-    find token in TOKENS
-            ↓
-    get user_id
-            ↓
-    find user in USERS
-            ↓
-    return user
-
-    Then instead of repeating this:
-
-    token = request.headers.get("Authorization")
-    token_type, token_value = token.split("-")
-
-    for tk in TOKENS:
-        ...
-
-    in every endpoint, you can do:
-
-    user = get_current_user(request)
-
-    This is the next concept I would learn, because almost every protected endpoint will need it.
-
 
 2. Fix your token format
     Currently you return:
@@ -353,7 +341,7 @@ def deletePost(request:Request, post_id:int = Query()):
     What if the token is wrong?
 
     Authorization: Bearer abcxyz
-    
+
 
     What if the format is wrong?
 
