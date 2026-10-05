@@ -353,6 +353,7 @@ def deletePost(request:Request, post_id:int = Query()):
     What if the token is wrong?
 
     Authorization: Bearer abcxyz
+    
 
     What if the format is wrong?
 
@@ -366,4 +367,3 @@ def deletePost(request:Request, post_id:int = Query()):
 
     
 """
-
