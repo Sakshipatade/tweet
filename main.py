@@ -50,7 +50,6 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
 
 
 
-
 # get all other users only after you loggedIn
 @app.get("/users")
 def getUsers(request:Request):
@@ -58,7 +57,6 @@ def getUsers(request:Request):
     if user is None:
         return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
     return USERS
-
 
 
 
