@@ -192,7 +192,6 @@ def deletePost(request:Request, id:int):
 
     Then you'll learn why Bearer exists and how real APIs handle authentication.
 
-
 3. complete the CRUD 
     POST   /posts
     GET    /posts   
