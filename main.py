@@ -352,6 +352,5 @@ def deletePost(request:Request, id:int):
     401 Unauthorized
 
     instead of crashing.
-
-    
+  
 """
