@@ -174,6 +174,7 @@ def deletePost(request:Request, id:int):
 
 
 """  Things to do:
+u have to use database now
 
 2. Fix your token format
     Currently you return:
