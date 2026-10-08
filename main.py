@@ -38,11 +38,29 @@ async def createUser(request:Request):
 # login
 @app.post("/login")
 def loginUser(username:str=Body(...), password:str = Body(...)):
+
+    print("LOGIN ENDPOINT CALLED")
+    print("username:", username)
+
     for user in USERS:
+        print("current user:" , user)
         if user.get('username') == username:
+            print("username matched")
             if user.get('password') == password:
+                print("password matched")
                 token = ''.join(random.choices(string.ascii_letters + string.digits, k=6)) #generating random token
+
+                print("NEW TOKEN GENERATED:", token)
+
+                # checking if there is any previous token assigned to that user, if yes removing that token
+                for tk in TOKENS:
+                    if tk.get("user_id") == user.get("user_id"):
+                        TOKENS.remove(tk)
+
+                # appending new token
                 TOKENS.append({"token":token, "user_id":user.get("user_id")})
+                print("TOKENS:", TOKENS)
+
                 return JSONResponse(content={"msg":"login successful", "token": f'Token-{token}'}, status_code=status.HTTP_200_OK)
             else:
                 return JSONResponse(content="Invalid Password", status_code=400)
@@ -94,7 +112,8 @@ def deleteUser(request:Request,id:int):
     else:
         if user.get("user_id") == id:
             USERS.remove(user)
-            return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
+            # return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
+            return USERS
 
     # token_user_id=None
     # token = request.headers.get('Authorization')
