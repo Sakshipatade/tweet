@@ -110,10 +110,14 @@ def deleteUser(request:Request,id:int):
     if user is None:
         return JSONResponse(content="unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
     else:
-        if user.get("user_id") == id:
-            USERS.remove(user)
-            # return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
-            return USERS
+        for tk in TOKENS:
+            if tk.get("user_id") == id:
+                USERS.remove(user)
+                TOKENS.remove(tk)
+                return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
+                # return USERS
+            else:
+                return JSONResponse(content="You are not allowed to delete..", status_code=status.HTTP_401_UNAUTHORIZED)
 
     # token_user_id=None
     # token = request.headers.get('Authorization')
