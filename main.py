@@ -11,14 +11,13 @@ def getCurrentUser(request:Request):
     token_type, token_id = token.split("-")
 
     if token_type == "Token":
-
         for tk in TOKENS:
             if tk.get("token") == token_id:
-
                 for user in USERS:
                     if user.get("user_id") == tk.get("user_id"):
-                        return user
+                        return user #getting the user associated with that token
         return None
+# this method tells -> This request is coming from user x and the request is authenticated
 
 
 # create a new user
@@ -38,33 +37,27 @@ async def createUser(request:Request):
 # login
 @app.post("/login")
 def loginUser(username:str=Body(...), password:str = Body(...)):
-
-    print("LOGIN ENDPOINT CALLED")
-    print("username:", username)
-
     for user in USERS:
-        print("current user:" , user)
         if user.get('username') == username:
-            print("username matched")
             if user.get('password') == password:
-                print("password matched")
+
                 token = ''.join(random.choices(string.ascii_letters + string.digits, k=6)) #generating random token
 
-                print("NEW TOKEN GENERATED:", token)
-
                 # checking if there is any previous token assigned to that user, if yes removing that token
-                for tk in TOKENS:
-                    if tk.get("user_id") == user.get("user_id"):
-                        TOKENS.remove(tk)
+                # for tk in TOKENS:
+                #     if tk.get("user_id") == user.get("user_id"):
+                #         TOKENS.remove(tk)
+
+                # Another way: Create a list containing everything except this that user's tokens, then put those contents back into the existing TOKENS list.
+                TOKENS[:] = [tk for tk in TOKENS if tk.get("user_id") != user.get("user_id")]
 
                 # appending new token
                 TOKENS.append({"token":token, "user_id":user.get("user_id")})
-                print("TOKENS:", TOKENS)
 
                 return JSONResponse(content={"msg":"login successful", "token": f'Token-{token}'}, status_code=status.HTTP_200_OK)
             else:
                 return JSONResponse(content="Invalid Password", status_code=400)
-    return JSONResponse(content="Username not found", status_code=404)
+    return JSONResponse(content="User not found", status_code=404)
 
 
 
@@ -107,43 +100,19 @@ def getUser(request:Request,id:int):
 def deleteUser(request:Request,id:int):
     user = getCurrentUser(request)
 
-    if user is None:
+    if user is None: #None means getCurrentUser failed to return a valid user
         return JSONResponse(content="unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
-    else:
-        for tk in TOKENS:
-            if tk.get("user_id") == id:
-                USERS.remove(user)
-                TOKENS.remove(tk)
-                return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
-                # return USERS
-            else:
-                return JSONResponse(content="You are not allowed to delete..", status_code=status.HTTP_401_UNAUTHORIZED)
 
-    # token_user_id=None
-    # token = request.headers.get('Authorization')
-    # token_type, token_id = token.split('-')
+    if user.get("user_id") != id:
+        return JSONResponse(content="You are not allowed to delete", status_code=status.HTTP_403_FORBIDDEN)
 
-    
-    # for t in TOKENS:
-    #     if t.get("token") == token_id:
-    #         token_user_id = t.get("user_id")
+    USERS.remove(user)
 
+    # delete that user's token too
+    TOKENS[:] = [tk for tk in TOKENS if tk.get("user_id") != user.get("user_id")]
 
-    # if token_user_id is None:
-    #     return JSONResponse(content="", status_code=status.HTTP_401_UNAUTHORIZED)
+    return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
 
-    # for u in USERS:
-    #     if token_user_id == u.get("user_id"):
-    #         USERS.remove(u)
-    #         return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
-
-    # # for user in USERS:
-    # #     for tk in TOKENS:
-    # #         if token_id == tk.get("token"):
-    # #             if user.get("user_id") == tk.get("user_id"):
-    # #                 USERS.remove(user)
-    # #             return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
-    # return JSONResponse(content='Falied to delete user', status_code=status.HTTP_404_NOT_FOUND)
 
 
 # getting all posts of the user who is loggedIn
