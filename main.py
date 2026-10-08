@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status, Request, Body, Query
+from fastapi import FastAPI, status, Request, Body, Query, Header
 from fastapi.responses import JSONResponse
 from tweet.data import USERS, COMMENTS, POSTS, TOKENS
 import json, random, string
@@ -79,6 +79,19 @@ async def getProfile(request:Request):
         return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
     return user
 
+# getting post of loggedIn user
+@app.get("/users/posts")
+def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger UI for giving the token with the request
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    user_posts = []
+    for post in POSTS:
+        if post.get("user_id") == user.get("user_id"):
+            user_posts.append(post)
+    return user_posts
 
 # Get/Search user by his id only after u are loggedIN 
 @app.get('/users/{id}')
@@ -114,52 +127,59 @@ def deleteUser(request:Request,id:int):
     return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
 
 
-
-# getting all posts of the user who is loggedIn
-@app.get("/user/posts")
-def getUserPosts(request:Request):
-    token = request.headers.get("Authorization")
-    token_type, token_id = token.split("-")
-    # print(token_type, token_value)
-
-    for tk in TOKENS:
-        if tk.get("token") == token_id:
-            user_posts = []
-            for post in POSTS:
-                if post.get("user_id") == tk.get("user_id"):
-                    user_posts.append(post)
-            return user_posts
-
 # getting all posts
 @app.get("/posts")
 def getAllPosts(request:Request):
-    token = request.headers.get("Authorization")
-    token_type, token_id = token.split("-")
+    user = getCurrentUser(request)
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+    return POSTS
 
-    for tk in TOKENS:
-        if tk.get("token") == token_id:
-            return POSTS
+# getting all posts of specified user
+@app.get("/users/{user_id}/posts")
+def getUserPosts(request:Request, user_id:int):
+    user = getCurrentUser(request)
+    print("Current User: ", user)
+
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+    
+    user_posts = []
+    for post in POSTS:
+        if post.get("user_id") == user_id:
+            user_posts.append(post)
+    return user_posts
+
+
+
+# getting a specified post of a specified user
+@app.get("/users/{user_id}/posts/{post_id}")
+def getUserPost(request:Request, user_id:int, post_id:int):
+    user = getCurrentUser(request)
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    for post in POSTS:
+        if post.get("post_id") == post_id and post.get("user_id") == user_id:
+            return post
+    return JSONResponse(content="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+    
+
 
 # deleting post of the user who is loggedIn
 @app.delete("/posts/{id}")
 def deletePost(request:Request, id:int):
-   token = request.headers.get("Authorization")
-   token_type, token_value = token.split("-")
+    user = getCurrentUser(request)
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
 
-
-   for tk in TOKENS:
-        if tk.get("token") == token_value:
-            for post in POSTS:
-                if post.get("post_id") == id:
-                   POSTS.remove(post)
-                   return JSONResponse(content={"msg": "Post deleted.."}, status_code=status.HTTP_200_OK)
-            return JSONResponse(content={"msg":"Post not found"}, status_code=status.HTTP_404_NOT_FOUND)
-   return JSONResponse(content={"msg":"Unauthorized"}, status_code=status.HTTP_401_UNAUTHORIZED)
-
-
-
-
-
+    for post in POSTS:
+        if post.get("post_id") == id:
+            if post.get("user_id") == user.get("user_id"):
+                POSTS.remove(post)
+                return JSONResponse(content="Post deleted..", status_code=status.HTTP_200_OK)
+            else:
+                return JSONResponse(content="You are not allowed to delete this post", status_code=status.HTTP_403_FORBIDDEN)
 
 
 
@@ -185,10 +205,8 @@ def deletePost(request:Request, id:int):
 
 3. complete the CRUD 
     POST   /posts
-    GET    /posts   
-    GET    /posts/{post_id}
+
     PUT    /posts/{post_id}
-    DELETE /posts/{post_id}
     The important authorization rule should be:
 
     Logged-in user
