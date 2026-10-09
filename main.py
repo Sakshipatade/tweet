@@ -8,16 +8,33 @@ app = FastAPI()
 # Authentication logic
 def getCurrentUser(request:Request):
     token = request.headers.get("Authorization")
-    token_type, token_id = token.split("-")
 
-    if token_type == "Token":
-        for tk in TOKENS:
-            if tk.get("token") == token_id:
-                for user in USERS:
-                    if user.get("user_id") == tk.get("user_id"):
-                        return user #getting the user associated with that token
+    # checking if the header is missing 
+    if not token:
+        return None
+
+    # checking if the format is correct
+    parts = token.split("-")
+
+    if len(parts) != 2:
+        return None
+
+    token_type, token_id = parts
+
+    if token_type != "Token" or not token_id:
+        return None
+
+    # finding the token
+    for tk in TOKENS:
+        if tk.get("token") == token_id:
+
+            #getting the user associated with that token
+            for user in USERS:
+                if user.get("user_id") == tk.get("user_id"):
+                    return user 
         return None
 # this method tells -> This request is coming from user x and the request is authenticated
+
 
 
 # create a new user
@@ -300,44 +317,6 @@ async def updatePost(request:Request, id:int):
     Authorization: Bearer ahsyw6
 
     Then you'll learn why Bearer exists and how real APIs handle authentication.
-
-3. complete the CRUD 
-    PUT    /posts/{post_id}
-    PUT    /users/{user_id}
-
-    The important authorization rule should be:
-
-    Logged-in user
-        ↓
-    Can see all posts
-        ↓
-    Can create a post
-        ↓
-    Can update ONLY own post
-        ↓
-    Can delete ONLY own post
-
-    For example, if Sakshi owns:
-
-    {
-        "post_id": 1,
-        "user_id": 1,
-        "content": "FastAPI is a framework of python"
-    }
-
-    and Vaishnavi (user_id = 2) sends:
-
-    PUT /posts/1
-
-    your API should reject it because:
-
-    logged_in_user_id = 2
-    post_owner_id     = 1
-
-    2 != 1
-
-    This is the authorization part.
-
     
 
 4. Add comments CRUD
@@ -409,29 +388,4 @@ async def updatePost(request:Request, id:int):
 
     That will teach you how backend APIs combine related data.
 
-
-7. Handle invalid/missing tokens
-    Right now this can cause problems:
-
-    token = request.headers.get("Authorization")
-    token_type, token_id = token.split("-")
-
-    What if there is no header?
-
-    Authorization header missing
-
-    What if the token is wrong?
-
-    Authorization: Bearer abcxyz
-
-
-    What if the format is wrong?
-
-    Authorization: hello
-
-    Your API should return:
-
-    401 Unauthorized
-
-    instead of crashing.
 """
