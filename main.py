@@ -381,10 +381,22 @@ def getPostOnICommented(request:Request, post_id:int):
 
 
     
+# get all comments on my specific posts
+@app.get("/me/posts/{post_id}/comments")
+def getAllCommentsOnMyPost(request:Request, post_id:int):
+    user = getCurrentUser(request)
 
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
 
-
-
+    all_comments = []
+    for post in POSTS:
+        if post.get("user_id") == user.get("user_id") and post.get("post_id") == post_id:
+            for comment in COMMENTS:
+                if comment.get("post_id") == post_id:
+                    all_comments.append(comment)
+            return all_comments
+    return JSONResponse(content="post not found", status_code=status.HTTP_404_NOT_FOUND)
 
 
 
