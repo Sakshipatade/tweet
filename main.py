@@ -249,7 +249,38 @@ async def updateUser(request:Request, id:int):
     })
 
     return JSONResponse(content="record updated..", status_code= status.HTTP_200_OK)
+
+
+
     
+# update the post of the user by himself only after he is loggedIn
+@app.put("/posts/{id}")
+async def updatePost(request:Request, id:int):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    for post in POSTS:
+        if post.get("post_id") == id:
+
+            if post.get("user_id") != user.get("user_id"):
+                return JSONResponse(content="You do not have the perrmission the modify this post")
+
+            if post.get("user_id") == user.get("user_id"):
+
+                body = await request.json()
+
+                # We write these two lines to prevent the user from changing the post ID or the owner of the post through the request body.
+                body.pop("post_id", None)
+                body.pop("user_id", None)
+
+                post.update(body)
+                return JSONResponse(content="Post updated sucessfully..")
+        
+    return JSONResponse(content='Post not found', status_code=status.HTTP_404_NOT_FOUND)
+
+
 
 
 """  Things to do:
