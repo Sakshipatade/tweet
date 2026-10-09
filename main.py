@@ -489,6 +489,29 @@ def getAllCommentsOnAnyPost(request:Request, post_id:int):
 
 
 
+# get specific comment on a specific post
+@app.get("/posts/{post_id}/comments/{comment_id}")
+def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:int):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    post_exists = False
+
+    for post in POSTS:
+        if post.get("post_id") == post_id:
+            post_exists = True
+            break
+
+    if not post_exists:
+        return JSONResponse(content="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+
+    for comment in COMMENTS:
+        if comment.get("comment_id") == comment_id and comment.get("post_id") == post_id:
+            return comment
+    return JSONResponse(content="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
+
 
 
 
