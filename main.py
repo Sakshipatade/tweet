@@ -401,10 +401,19 @@ def getAllCommentsOnMyPost(request:Request, post_id:int):
 
 
 
+# get a single comment 
+@app.get("/comments/{id}")
+def getSpecificComment(request:Request, id:int):
+    user = getCurrentUser(request)
 
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
 
-
-
+    for comment in COMMENTS:
+        if comment.get("comment_id") == id:
+            return comment
+    return JSONResponse(content="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
+    
 
 
 
