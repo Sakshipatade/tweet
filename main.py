@@ -23,9 +23,11 @@ def getCurrentUser(request:Request):
 # create a new user
 @app.post("/users")
 async def createUser(request:Request):
-    data = await request.body()
-    # print(data)
-    body = json.loads(data)
+    # data = await request.body()
+    # # print(data)
+    # body = json.loads(data)
+
+    body = await request.json()
     new_user_id = len(USERS) + 1
     # print(new_user_id)
     body["user_id"] = new_user_id
@@ -79,6 +81,9 @@ async def getProfile(request:Request):
         return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
     return user
 
+
+
+
 # getting post of loggedIn user
 @app.get("/users/posts")
 def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger UI for giving the token with the request
@@ -93,6 +98,8 @@ def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger
             user_posts.append(post)
     return user_posts
 
+
+
 # Get/Search user by his id only after u are loggedIN 
 @app.get('/users/{id}')
 def getUser(request:Request,id:int):
@@ -106,6 +113,7 @@ def getUser(request:Request,id:int):
             return u
 
     return JSONResponse(content = {"error" : "user not found"}, status_code = 404)
+
 
 
 # Delete user only if he is authenticated Or delete me by me only
@@ -127,6 +135,7 @@ def deleteUser(request:Request,id:int):
     return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
 
 
+
 # getting all posts
 @app.get("/posts")
 def getAllPosts(request:Request):
@@ -134,6 +143,8 @@ def getAllPosts(request:Request):
     if user is None:
         return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
     return POSTS
+
+
 
 # getting all posts of specified user
 @app.get("/users/{user_id}/posts")
@@ -183,6 +194,62 @@ def deletePost(request:Request, id:int):
 
 
 
+# create a new post by the user who is loggedIn
+@app.post("/posts")
+async def createPost(request:Request):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    # data =  await request.body()
+    # body = json.loads(data)
+    body = await request.json()
+
+    new_post_id = max(post.get("post_id") for post in POSTS) + 1
+
+    body["user_id"] = user.get("user_id")
+    body["post_id"] = new_post_id
+    POSTS.append(body)
+    return JSONResponse(content="Post created successfully..", status_code=status.HTTP_201_CREATED)
+
+
+
+# update user by him only, only after he is loggedIn
+@app.put("/users/{id}")
+async def updateUser(request:Request, id:int):
+    user = getCurrentUser(request)
+  
+    if user is None:
+        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    if user.get("user_id") != id:
+        return JSONResponse(content="You are not allowed to do this", status_code=status.HTTP_403_FORBIDDEN)
+
+    # data = await request.body()
+    # body = json.loads(data)
+
+    # OR
+
+    body = await request.json()
+    # await request.json() reads the request body and converts the JSON data into a Python object, usually a dictionary. and No need for json.loads()
+    # data = await request.body()       Returns raw body as bytes and You need json.loads(data) afterward
+
+    if "username" not in body or "password" not in body:
+        return JSONResponse(content="Username and Password are required..", status_code=status.HTTP_400_BAD_REQUEST)
+
+
+    if (user.get("username") == body.get("username") and user.get("password") == body.get("password")):
+        return JSONResponse(content="Records are same as previous one...want to edit your info?")
+
+
+    user.update({
+        "username" : body["username"],
+        "password" : body["password"]
+    })
+
+    return JSONResponse(content="record updated..", status_code= status.HTTP_200_OK)
+    
 
 
 """  Things to do:
@@ -204,9 +271,9 @@ def deletePost(request:Request, id:int):
     Then you'll learn why Bearer exists and how real APIs handle authentication.
 
 3. complete the CRUD 
-    POST   /posts
-
     PUT    /posts/{post_id}
+    PUT    /users/{user_id}
+
     The important authorization rule should be:
 
     Logged-in user
@@ -310,30 +377,6 @@ def deletePost(request:Request, id:int):
     ]
 
     That will teach you how backend APIs combine related data.
-
-
-6. Add user update
-
-    You currently have this commented:
-
-    # @app.put("/users/{id}")
-    # def updateUserInfo(id:int):
-
-    Implement it with authentication.
-
-    The client should not be allowed to say:
-
-    PUT /users/2
-
-    while logged in as user 1 and modify user 2.
-
-    Instead:
-
-    Token → user_id = 1
-            ↓
-    modify user 1
-
-    This reinforces the same authorization concept.
 
 
 7. Handle invalid/missing tokens
