@@ -40,10 +40,6 @@ def getCurrentUser(request:Request):
 # create a new user
 @app.post("/users")
 async def createUser(request:Request):
-    # data = await request.body()
-    # # print(data)
-    # body = json.loads(data)
-
     body = await request.json()
     new_user_id = len(USERS) + 1
     # print(new_user_id)
@@ -101,7 +97,7 @@ async def getProfile(request:Request):
 
 
 
-# getting post of loggedIn user
+# getting post of loggedIn user or getting my posts 
 @app.get("/users/posts")
 def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger UI for giving the token with the request
     user = getCurrentUser(request)
@@ -300,6 +296,93 @@ async def updatePost(request:Request, id:int):
 
 
 
+# get all comments only after user is loggedIn
+@app.get("/comments")
+def getAllComments(request:Request):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+    return COMMENTS
+
+
+
+# get comments written by me OR current loggedIn user
+@app.get("/comments/me")
+def getMyComments(request:Request):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    all_comments = []
+    for comment in COMMENTS:
+        if comment.get("user_id") == user.get("user_id"):
+            all_comments.append(comment)
+    return all_comments
+
+
+
+# get all comments on my all posts
+@app.get("/me/comments/received")
+def getCommentsOnMyPosts(request:Request):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    all_comments = []
+
+    for post in POSTS:
+        if user.get("user_id") == post.get("user_id"):
+            for comment in COMMENTS:
+                if post.get("post_id") == comment.get("post_id"):
+                    all_comments.append(comment)
+    return all_comments
+    
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """  Things to do:
 1. u have to use database now
 
@@ -318,53 +401,6 @@ async def updatePost(request:Request, id:int):
 
     Then you'll learn why Bearer exists and how real APIs handle authentication.
     
-
-4. Add comments CRUD
-    Your COMMENTS structure is already correct for this.
-
-    Implement:
-
-    POST   /posts/{post_id}/comments
-    GET    /posts/{post_id}/comments
-    PUT    /comments/{comment_id}
-    DELETE /comments/{comment_id}
-
-    For creating a comment:
-
-    logged-in user
-        +
-    post_id
-        ↓
-    create comment
-
-    You should not ask the client for user_id.
-
-    For example:
-
-    {
-        "post_id": 3,
-        "comment_content": "Nice post"
-    }
-
-    The server gets the user_id from the token.
-
-    So conceptually:
-
-    Token
-    ↓
-    user_id = 1
-
-    POST /posts/3/comments
-    ↓
-    comment = {
-        "comment_id": 115,
-        "user_id": 1,
-        "post_id": 3,
-        "comment_content": "Nice post"
-    }
-
-    This is an important backend concept.
-
 
 5. Make a proper home-feed endpoint
     You previously wanted the logged-in user to see their posts + other users' posts.
