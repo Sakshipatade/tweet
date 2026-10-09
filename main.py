@@ -362,6 +362,21 @@ def getPostsOnUserCommented(request:Request):
 
 
 
+# get specific post which i have commmented
+@app.get("/me/commented_posts/{post_id}")
+def getPostOnICommented(request:Request, post_id:int):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+
+    for comment in COMMENTS:
+        if comment.get("user_id") == user.get("user_id") and comment.get("post_id") == post_id:
+            for post in POSTS:
+                if post_id == post.get("post_id"):
+                    return post
+    return JSONResponse(content="Post not found or you are not commented on it.", status_code=status.HTTP_404_NOT_FOUND)
 
 
 
