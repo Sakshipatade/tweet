@@ -415,6 +415,31 @@ def getSpecificComment(request:Request, id:int):
     return JSONResponse(content="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
     
 
+# get comments written by a specific user
+@app.get("/users/{user_id}/comments")
+def getCommentsByUser(request:Request, user_id:int):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    requested_user = None
+
+    for user in USERS:
+        if user.get("user_id") == user_id:
+            requested_user = user
+            break
+
+    if requested_user is None:
+        return JSONResponse(content="User not found", status_code=status.HTTP_404_NOT_FOUND)
+
+    
+    user_comments = []
+    for comment in COMMENTS:
+        if comment.get("user_id") == user_id:
+            user_comments.append(comment)
+    return user_comments
+
 
 
 
