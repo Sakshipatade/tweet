@@ -514,21 +514,21 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
 
 
 
-# create a new post 
-@app.post("/comments")
-async def createComment(request:Request):
-    user = getCurrentUser(request)
+# # create a new post 
+# @app.post("/comments")
+# async def createComment(request:Request):
+#     user = getCurrentUser(request)
 
-    if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+#     if user is None:
+#         return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
 
-    body = await request.json()
-    new_comment_id = max(comment.get("comment_id") for comment in COMMENTS)+1
-    body["user_id"] = user.get("user_id")
-    body["comment_id"] = new_comment_id
-    COMMENTS.append(body)
+#     body = await request.json()
+#     new_comment_id = max(comment.get("comment_id") for comment in COMMENTS)+1
+#     body["user_id"] = user.get("user_id")
+#     body["comment_id"] = new_comment_id
+#     COMMENTS.append(body)
 
-    return JSONResponse(content="comment added successfully", status_code=status.HTTP_200_OK)
+#     return JSONResponse(content="comment added successfully", status_code=status.HTTP_200_OK)
     
 
 
