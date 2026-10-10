@@ -533,23 +533,6 @@ async def createComment(request:Request):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 """  Things to do:
 1. u have to use database now
 
