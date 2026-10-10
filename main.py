@@ -513,7 +513,7 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
     return JSONResponse(content="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
 
 
-
+# TODO: add security
 # # create a new post 
 # @app.post("/comments")
 # async def createComment(request:Request):
