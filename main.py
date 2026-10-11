@@ -532,7 +532,6 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
     
 
 
-
 """  Things to do:
 1. u have to use database now
 
