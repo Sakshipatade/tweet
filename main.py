@@ -531,7 +531,6 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
 #     return JSONResponse(content="comment added successfully", status_code=status.HTTP_200_OK)
     
 
-
 """  Things to do:
 1. u have to use database now
 
