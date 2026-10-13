@@ -547,9 +547,7 @@ def deleteComment(request:Request, comment_id:int):
                 return JSONResponse(content="Comment Deleted..", status_code=status.HTTP_200_OK)
             return JSONResponse(content="You does not have the permission to delete this post",status_code=status.HTTP_403_FORBIDDEN)
     return JSONResponse(content="Comment not found",status_code=status.HTTP_404_NOT_FOUND)
-            # COMMENTS.remove(comment)
-    # return JSONResponse(content="You does not have the permission to delete this post", status_code=status.HTTP_403_FORBIDDEN)
-    
+          
 
 
 
