@@ -550,6 +550,8 @@ def deleteComment(request:Request, comment_id:int):
 
 
 
+
+
           
 """  Things to do:
 1. u have to use database now
