@@ -32,7 +32,7 @@ def getCurrentUser(request:Request):
             for user in USERS:
                 if user.get("user_id") == tk.get("user_id"):
                     return user 
-        return None
+    return None
 # this method tells -> This request is coming from user x and the request is authenticated
 
 
@@ -567,13 +567,19 @@ async def updateComment(request:Request, comment_id:int):
 
             body = await request.json()
 
-            # We write these two lines to prevent the user from changing the Comment Id or the owner of the post through the request body.
+            # We write these lines to prevent the user from changing the Comment Id or the owner of the post through the request body.
             body.pop("comment_id", None)
             body.pop("user_id", None)
+            body.pop("post_id",None)
 
-            
             comment.update(body)
+
             return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
+            # if comment.get("post_id") != body.get("post_id") or comment.get("comment_content") != body.get("comment_content"):
+            #     comment.update(body)
+            #     return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
+            # else:
+            #     return JSONResponse("Previous data is matching this data. want to update it?", status_code=status.HTTP_409_CONFLICT)
     return JSONResponse(content="Comment not exists", status_code=status.HTTP_404_NOT_FOUND)
 
 
