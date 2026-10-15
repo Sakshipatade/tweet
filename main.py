@@ -513,22 +513,43 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
     return JSONResponse(content="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
 
 
-# # TODO: add security
-# # create a new post 
-# @app.post("/comments")
-# async def createComment(request:Request):
-#     user = getCurrentUser(request)
+# TODO: add security
+# create a new post 
+@app.post("/comments")
+async def createComment(request:Request):
+    user = getCurrentUser(request)
 
-#     if user is None:
-#         return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
 
-#     body = await request.json()
-#     new_comment_id = max(comment.get("comment_id") for comment in COMMENTS)+1
-#     body["user_id"] = user.get("user_id")
-#     body["comment_id"] = new_comment_id
-#     COMMENTS.append(body)
+    body = await request.json()
 
-#     return JSONResponse(content="comment added successfully", status_code=status.HTTP_200_OK)
+    post_id = body.get("post_id")
+    if post_id is None:
+        return JSONResponse(content="Post id is required", status_code=status.HTTP_400_BAD_REQUEST)
+
+    # check whether the post exists
+    # post_exits = False
+    # for post in POSTS:
+    #     if post.get("post_id") == post_id:
+    #         post_exits = True
+    #         break
+    # OR
+    post_exists = any(post.get("post_id") == post_id for post in POSTS)
+
+    if not post_exists:
+        return JSONResponse(content="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+
+    # generate new comment id
+    new_comment_id = max(comment.get("comment_id") for comment in COMMENTS)+1
+
+    # set the author and the comment id on the server
+    body["user_id"] = user.get("user_id")
+    body["comment_id"] = new_comment_id
+
+    COMMENTS.append(body)
+
+    return JSONResponse(content="comment added successfully", status_code=status.HTTP_201_CREATED)
 
 
 
