@@ -600,7 +600,9 @@ def deleteComment(request:Request, comment_id:int):
 """  Things to do:
 1. u have to use database now
 
-2. Fix your token format
+2. u also have to use pydantic
+
+3. Fix your token format
     Currently you return:
 
     Token-ahsyw6
@@ -616,7 +618,7 @@ def deleteComment(request:Request, comment_id:int):
     Then you'll learn why Bearer exists and how real APIs handle authentication.
     
 
-5. Make a proper home-feed endpoint
+4. Make a proper home-feed endpoint
     You previously wanted the logged-in user to see their posts + other users' posts.
 
     So add:
