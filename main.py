@@ -575,11 +575,6 @@ async def updateComment(request:Request, comment_id:int):
             comment.update(body)
 
             return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
-            # if comment.get("post_id") != body.get("post_id") or comment.get("comment_content") != body.get("comment_content"):
-            #     comment.update(body)
-            #     return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
-            # else:
-            #     return JSONResponse("Previous data is matching this data. want to update it?", status_code=status.HTTP_409_CONFLICT)
     return JSONResponse(content="Comment not exists", status_code=status.HTTP_404_NOT_FOUND)
 
 
