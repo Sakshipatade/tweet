@@ -278,18 +278,17 @@ async def updatePost(request:Request, id:int):
         if post.get("post_id") == id:
 
             if post.get("user_id") != user.get("user_id"):
-                return JSONResponse(content="You do not have the perrmission the modify this post")
+                return JSONResponse(content="You do not have the perrmission the modify this post" , status_code=status.HTTP_403_FORBIDDEN)
 
-            if post.get("user_id") == user.get("user_id"):
 
-                body = await request.json()
+            body = await request.json()
 
-                # We write these two lines to prevent the user from changing the post ID or the owner of the post through the request body.
-                body.pop("post_id", None)
-                body.pop("user_id", None)
+            # We write these two lines to prevent the user from changing the post ID or the owner of the post through the request body.
+            body.pop("post_id", None)
+            body.pop("user_id", None)
 
-                post.update(body)
-                return JSONResponse(content="Post updated sucessfully..")
+            post.update(body)
+            return JSONResponse(content="Post updated sucessfully..")
         
     return JSONResponse(content='Post not found', status_code=status.HTTP_404_NOT_FOUND)
 
@@ -550,6 +549,32 @@ async def createComment(request:Request):
     COMMENTS.append(body)
 
     return JSONResponse(content="comment added successfully", status_code=status.HTTP_201_CREATED)
+
+
+# update existing comment only by the author of that comment
+@app.put("/comments/{comment_id}")
+async def updateComment(request:Request, comment_id:int):
+    user = getCurrentUser(request)
+
+    if user is None:
+        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+    for comment in COMMENTS:
+
+        if comment.get("comment_id") == comment_id:
+            if user.get("user_id") != comment.get("user_id"):
+                return JSONResponse(content="You does not have the permission to modify this post", status_code=status.HTTP_403_FORBIDDEN)
+
+            body = await request.json()
+
+            # We write these two lines to prevent the user from changing the Comment Id or the owner of the post through the request body.
+            body.pop("comment_id", None)
+            body.pop("user_id", None)
+
+            
+            comment.update(body)
+            return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
+    return JSONResponse(content="Comment not exists", status_code=status.HTTP_404_NOT_FOUND)
 
 
 
