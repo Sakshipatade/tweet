@@ -267,15 +267,15 @@ async def updateUser(request:Request, id:int):
 
     
 # update the post of the user by himself only after he is loggedIn
-@app.put("/posts/{id}")
-async def updatePost(request:Request, id:int):
+@app.put("/posts/{post_id}")
+async def updatePost(request:Request, post_id:int):
     user = getCurrentUser(request)
 
     if user is None:
         return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
 
     for post in POSTS:
-        if post.get("post_id") == id:
+        if post.get("post_id") == post_id:
 
             if post.get("user_id") != user.get("user_id"):
                 return JSONResponse(content="You do not have the perrmission the modify this post" , status_code=status.HTTP_403_FORBIDDEN)
