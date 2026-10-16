@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status, Request, Body, Query, Header
+from fastapi import FastAPI, status, Request, Body, Query, Header, HTTPException
 from fastapi.responses import JSONResponse
 from tweet.data import USERS, COMMENTS, POSTS, TOKENS
 import json, random, string
@@ -72,7 +72,7 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
                 return JSONResponse(content={"msg":"login successful", "token": f'Token-{token}'}, status_code=status.HTTP_200_OK)
             else:
                 return JSONResponse(content="Invalid Password", status_code=400)
-    return JSONResponse(content="User not found", status_code=404)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found")
 
 
 
@@ -81,7 +81,7 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
 def getUsers(request:Request):
     user = getCurrentUser(request)
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
     return USERS
 
 
@@ -91,7 +91,7 @@ def getUsers(request:Request):
 async def getProfile(request:Request):
     user = getCurrentUser(request)
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
     return user
 
 
@@ -103,7 +103,7 @@ def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     user_posts = []
     for post in POSTS:
@@ -119,13 +119,12 @@ def getUser(request:Request,id:int):
     user = getCurrentUser(request)
     print(user)
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code = status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    for u in USERS:
-        if u.get("user_id") == id:
-            return u
-
-    return JSONResponse(content = {"error" : "user not found"}, status_code = 404)
+    for user in USERS:
+        if user.get("user_id") == id:
+            return user
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "User not found..")
 
 
 
@@ -135,10 +134,10 @@ def deleteUser(request:Request,id:int):
     user = getCurrentUser(request)
 
     if user is None: #None means getCurrentUser failed to return a valid user
-        return JSONResponse(content="unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     if user.get("user_id") != id:
-        return JSONResponse(content="You are not allowed to delete", status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You are not allowed to delete the user...")
 
     USERS.remove(user)
 
@@ -154,7 +153,7 @@ def deleteUser(request:Request,id:int):
 def getAllPosts(request:Request):
     user = getCurrentUser(request)
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
     return POSTS
 
 
@@ -166,7 +165,7 @@ def getUserPosts(request:Request, user_id:int):
     print("Current User: ", user)
 
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
     
     user_posts = []
     for post in POSTS:
@@ -181,12 +180,12 @@ def getUserPosts(request:Request, user_id:int):
 def getUserPost(request:Request, user_id:int, post_id:int):
     user = getCurrentUser(request)
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     for post in POSTS:
         if post.get("post_id") == post_id and post.get("user_id") == user_id:
             return post
-    return JSONResponse(content="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "Post not found..")
     
 
 
@@ -195,15 +194,15 @@ def getUserPost(request:Request, user_id:int, post_id:int):
 def deletePost(request:Request, id:int):
     user = getCurrentUser(request)
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     for post in POSTS:
         if post.get("post_id") == id:
             if post.get("user_id") == user.get("user_id"):
                 POSTS.remove(post)
-                return JSONResponse(content="Post deleted..", status_code=status.HTTP_200_OK)
+                return JSONResponse(content="Post deleted successfully.", status_code=status.HTTP_200_OK)
             else:
-                return JSONResponse(content="You are not allowed to delete this post", status_code=status.HTTP_403_FORBIDDEN)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You does have the permission to delete this post..")
 
 
 
@@ -213,7 +212,7 @@ async def createPost(request:Request):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     # data =  await request.body()
     # body = json.loads(data)
@@ -234,10 +233,10 @@ async def updateUser(request:Request, id:int):
     user = getCurrentUser(request)
   
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     if user.get("user_id") != id:
-        return JSONResponse(content="You are not allowed to do this", status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You does not have the permission to modify the user information.")
 
     # data = await request.body()
     # body = json.loads(data)
@@ -249,7 +248,7 @@ async def updateUser(request:Request, id:int):
     # data = await request.body()       Returns raw body as bytes and You need json.loads(data) afterward
 
     if "username" not in body or "password" not in body:
-        return JSONResponse(content="Username and Password are required..", status_code=status.HTTP_400_BAD_REQUEST)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username and Password are required.")
 
 
     if (user.get("username") == body.get("username") and user.get("password") == body.get("password")):
@@ -261,7 +260,7 @@ async def updateUser(request:Request, id:int):
         "password" : body["password"]
     })
 
-    return JSONResponse(content="record updated..", status_code= status.HTTP_200_OK)
+    return JSONResponse(content="User record updated successfully.", status_code= status.HTTP_200_OK)
 
 
 
@@ -272,13 +271,13 @@ async def updatePost(request:Request, post_id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="Unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     for post in POSTS:
         if post.get("post_id") == post_id:
 
             if post.get("user_id") != user.get("user_id"):
-                return JSONResponse(content="You do not have the perrmission the modify this post" , status_code=status.HTTP_403_FORBIDDEN)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You does not have the permission to modify this post")
 
 
             body = await request.json()
@@ -288,9 +287,9 @@ async def updatePost(request:Request, post_id:int):
             body.pop("user_id", None)
 
             post.update(body)
-            return JSONResponse(content="Post updated sucessfully..")
+            return JSONResponse(content="Post updated sucessfully..", status_code=status.HTTP_200_OK)
         
-    return JSONResponse(content='Post not found', status_code=status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
 
 
 
@@ -301,7 +300,7 @@ def getAllComments(request:Request):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
     return COMMENTS
 
 
@@ -312,7 +311,7 @@ def getMyComments(request:Request):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     all_comments = []
     for comment in COMMENTS:
@@ -328,7 +327,7 @@ def getCommentsOnMyPosts(request:Request):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     all_comments = []
 
@@ -347,7 +346,7 @@ def getPostsOnUserCommented(request:Request):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     all_posts = []
     for comment in COMMENTS:
@@ -367,7 +366,7 @@ def getPostOnICommented(request:Request, post_id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
 
     for comment in COMMENTS:
@@ -375,7 +374,7 @@ def getPostOnICommented(request:Request, post_id:int):
             for post in POSTS:
                 if post_id == post.get("post_id"):
                     return post
-    return JSONResponse(content="Post not found or you are not commented on it.", status_code=status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found or You are not commented on the post")
 
 
 
@@ -386,7 +385,7 @@ def getAllCommentsOnMyPost(request:Request, post_id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     all_comments = []
     for post in POSTS:
@@ -395,7 +394,7 @@ def getAllCommentsOnMyPost(request:Request, post_id:int):
                 if comment.get("post_id") == post_id:
                     all_comments.append(comment)
             return all_comments
-    return JSONResponse(content="post not found", status_code=status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
 
 
 
@@ -406,12 +405,12 @@ def getSpecificComment(request:Request, id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     for comment in COMMENTS:
         if comment.get("comment_id") == id:
             return comment
-    return JSONResponse(content="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found..")
     
 
 
@@ -422,7 +421,7 @@ def getCommentsByUser(request:Request, user_id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     requested_user = None
 
@@ -432,7 +431,7 @@ def getCommentsByUser(request:Request, user_id:int):
             break
 
     if requested_user is None:
-        return JSONResponse(content="User not found", status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found..")
 
     
     user_comments = []
@@ -450,7 +449,7 @@ def getSpecificCommentOfUser(request:Request, user_id:int, comment_id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     requested_user = None
 
@@ -460,12 +459,12 @@ def getSpecificCommentOfUser(request:Request, user_id:int, comment_id:int):
             break
 
     if requested_user is None:
-        return JSONResponse(content="User not found", status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found..")
 
     for comment in COMMENTS:
         if comment.get("user_id") == user_id and comment.get("comment_id") == comment_id:
             return comment
-    return JSONResponse(content="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found..")
 
 
 
@@ -475,7 +474,7 @@ def getAllCommentsOnAnyPost(request:Request, post_id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
     
     for post in POSTS:
         if post.get("post_id") == post_id:
@@ -484,7 +483,7 @@ def getAllCommentsOnAnyPost(request:Request, post_id:int):
                 if comment.get("post_id") == post_id:
                     all_comments.append(comment)
             return all_comments
-    return JSONResponse(content="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
 
 
 
@@ -494,7 +493,7 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     post_exists = False
 
@@ -504,12 +503,12 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
             break
 
     if not post_exists:
-        return JSONResponse(content="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
 
     for comment in COMMENTS:
         if comment.get("comment_id") == comment_id and comment.get("post_id") == post_id:
             return comment
-    return JSONResponse(content="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found..")
 
 
 # TODO: add security
@@ -519,13 +518,14 @@ async def createComment(request:Request):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        # return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     body = await request.json()
 
     post_id = body.get("post_id")
     if post_id is None:
-        return JSONResponse(content="Post id is required", status_code=status.HTTP_400_BAD_REQUEST)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Post Id is Required")
 
     # check whether the post exists
     # post_exits = False
@@ -537,7 +537,7 @@ async def createComment(request:Request):
     post_exists = any(post.get("post_id") == post_id for post in POSTS)
 
     if not post_exists:
-        return JSONResponse(content="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
 
     # generate new comment id
     new_comment_id = max(comment.get("comment_id") for comment in COMMENTS)+1
@@ -557,13 +557,13 @@ async def updateComment(request:Request, comment_id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     for comment in COMMENTS:
 
         if comment.get("comment_id") == comment_id:
             if user.get("user_id") != comment.get("user_id"):
-                return JSONResponse(content="You does not have the permission to modify this post", status_code=status.HTTP_403_FORBIDDEN)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You does not have the permission to modify this post")
 
             body = await request.json()
 
@@ -585,15 +585,15 @@ def deleteComment(request:Request, comment_id:int):
     user = getCurrentUser(request)
 
     if user is None:
-        return JSONResponse(content="unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     for comment in COMMENTS:
         if comment.get("comment_id") == comment_id:
             if comment.get("user_id") == user.get("user_id"):
                 COMMENTS.remove(comment)
                 return JSONResponse(content="Comment Deleted..", status_code=status.HTTP_200_OK)
-            return JSONResponse(content="You does not have the permission to delete this post",status_code=status.HTTP_403_FORBIDDEN)
-    return JSONResponse(content="Comment not found",status_code=status.HTTP_404_NOT_FOUND)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You does not have the permission to delete this post")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
 
 
           
