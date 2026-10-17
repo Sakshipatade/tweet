@@ -602,7 +602,7 @@ def deleteComment(request:Request, comment_id:int):
 """  Things to do:
 1. use database now
 
-2. u also have to use pydantic
+2. use pydantic models wherever possible
 
 3. Fix your token format
     Currently you return:
