@@ -600,6 +600,7 @@ def deleteComment(request:Request, comment_id:int):
 
           
 """  TODO:
+
 1. use database now
 
 2. use pydantic models wherever possible
