@@ -603,9 +603,9 @@ def deleteComment(request:Request, comment_id:int):
           
 """  TODO:
 
-1. use postgresql
+1. use postgresql 
 
-2. use pydantic models wherever possible
+2. use pydantic models for data validation
 
 3. Fix your token format
     Currently you return:
