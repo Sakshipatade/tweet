@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from tweet.data import USERS, COMMENTS, POSTS, TOKENS
 import json, random, string
 
+
 app = FastAPI()
 
 # Authentication logic
