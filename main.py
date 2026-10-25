@@ -145,7 +145,7 @@ def deleteUser(request:Request,id:int):
     # delete that user's token too
     TOKENS[:] = [tk for tk in TOKENS if tk.get("user_id") != user.get("user_id")]
 
-    return JSONResponse(content="user deleted successfully", status_code=status.HTTP_200_OK)
+    return JSONResponse(content="User deleted successfully", status_code=status.HTTP_200_OK)
 
 
 
@@ -598,9 +598,7 @@ def deleteComment(request:Request, comment_id:int):
 
 
 
-
-
-          
+      
 """  TODO:
 
 1. use postgresql 
