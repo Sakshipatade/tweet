@@ -1,10 +1,17 @@
 from fastapi import FastAPI, status, Request, Body, Query, Header, HTTPException
 from fastapi.responses import JSONResponse
 from tweet.data import USERS, COMMENTS, POSTS, TOKENS
+from pydantic import BaseModel, Field
 import json, random, string
 
 
 app = FastAPI()
+
+
+class createUser(BaseModel):
+    user_id : int
+    username : str
+    password : str
 
 # Authentication logic
 def getCurrentUser(request:Request):
