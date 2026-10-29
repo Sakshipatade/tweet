@@ -14,8 +14,11 @@ class createUser(BaseModel):
     password : str
 
 # Authentication logic
-def getCurrentUser(request:Request):
-    token = request.headers.get("Authorization")
+def getCurrentUser(request:Request,AuthHeader:str|None):
+    if AuthHeader is not None:
+        token = AuthHeader
+    else:
+        token = request.headers.get("Authorization")
 
     # checking if the header is missing 
     if not token:
@@ -87,7 +90,7 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
 # get all other users only after you loggedIn
 @app.get("/users")
 def getUsers(request:Request):
-    user = getCurrentUser(request)
+    user = getCurrentUser(AuthHeader=request.headers.get("Authorization"))
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
     return USERS
@@ -604,6 +607,46 @@ def deleteComment(request:Request, comment_id:int):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@app.post("/json/try/")
+def JsonTry(req:Request):
+    print(req.__dict__)
+    return {}
 
 
 """  TODO:
