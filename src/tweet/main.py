@@ -7,18 +7,12 @@ import json, random, string
 
 app = FastAPI()
 
-
-class createUser(BaseModel):
-    user_id : int
-    username : str
-    password : str
-
 # Authentication logic
-def getCurrentUser(request:Request,AuthHeader:str|None):
-    if AuthHeader is not None:
-        token = AuthHeader
-    else:
-        token = request.headers.get("Authorization")
+def getCurrentUser(request:Request):
+    # if AuthHeader is not None:
+    #     token = AuthHeader
+    # else:
+    token = request.headers.get("Authorization")
 
     # checking if the header is missing 
     if not token:
@@ -47,19 +41,6 @@ def getCurrentUser(request:Request,AuthHeader:str|None):
 # this method tells -> This request is coming from user x and the request is authenticated
 
 
-
-# create a new user
-@app.post("/users")
-async def createUser(request:Request):
-    body = await request.json()
-    new_user_id = len(USERS) + 1
-    # print(new_user_id)
-    body["user_id"] = new_user_id
-    USERS.append(body)
-    return USERS[-1] #returning the last new record added to list
-
-
-
 # login
 @app.post("/login")
 def loginUser(username:str=Body(...), password:str = Body(...)):
@@ -84,28 +65,6 @@ def loginUser(username:str=Body(...), password:str = Body(...)):
             else:
                 return JSONResponse(content="Invalid Password", status_code=400)
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found")
-
-
-
-# get all other users only after you loggedIn
-@app.get("/users")
-def getUsers(request:Request):
-    user = getCurrentUser(AuthHeader=request.headers.get("Authorization"))
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-    return USERS
-
-
-
-# getting profile of himself of the user who is logged In
-@app.get("/profile")
-async def getProfile(request:Request):
-    user = getCurrentUser(request)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-    return user
-
-
 
 
 # getting post of loggedIn user or getting my posts 
@@ -606,47 +565,6 @@ def deleteComment(request:Request, comment_id:int):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You does not have the permission to delete this post")
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@app.post("/json/try/")
-def JsonTry(req:Request):
-    print(req.__dict__)
-    return {}
 
 
 """  TODO:
