@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 # create a new user
-@router.post("/users")
+@router.post("")
 async def createUser(request:Request):
     body = await request.json()
     new_user_id = len(USERS) + 1
@@ -17,7 +17,7 @@ async def createUser(request:Request):
 
 
 # get all other users only after you loggedIn
-@router.get("/users")
+@router.get("")
 def getUsers(request:Request):
     user = getCurrentUser(request:Request)
     if user is None:
@@ -35,7 +35,7 @@ async def getProfile(request:Request):
 
 
 # getting post of loggedIn user or getting my posts 
-@router.get("/users/posts")
+@router.get("/posts")
 def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger UI for giving the token with the request
     user = getCurrentUser(request)
 
@@ -51,7 +51,7 @@ def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger
 
 
 # Get/Search user by his id only after u are loggedIN 
-@router.get('/users/{id}')
+@router.get('/{id}')
 def getUser(request:Request,id:int):
     user = getCurrentUser(request)
     print(user)
@@ -66,7 +66,7 @@ def getUser(request:Request,id:int):
 
 
 # Delete user only if he is authenticated Or delete me by me only
-@router.delete('/users/{id}')
+@router.delete('/{id}')
 def deleteUser(request:Request,id:int):
     user = getCurrentUser(request)
 
@@ -85,7 +85,7 @@ def deleteUser(request:Request,id:int):
 
 
 # update user by him only, only after he is loggedIn
-@router.put("/users/{id}")
+@router.put("/{id}")
 async def updateUser(request:Request, id:int):
     user = getCurrentUser(request)
   
