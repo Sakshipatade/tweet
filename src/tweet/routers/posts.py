@@ -1,9 +1,24 @@
 from fastapi import APIRouter, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from tweet.data import USERS,POSTS, COMMENTS, TOKENS
+from tweet.routers.auth import getCurrentUser
 
 router = APIRouter()
 
+
+# getting post of loggedIn user or getting my posts 
+@router.get("/posts")
+def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger UI for giving the token with the request
+    user = getCurrentUser(request)
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
+
+    user_posts = []
+    for post in POSTS:
+        if post.get("user_id") == user.get("user_id"):
+            user_posts.append(post)
+    return user_posts
 
 
 # getting all posts of specified user
