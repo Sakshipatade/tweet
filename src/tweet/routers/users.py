@@ -10,12 +10,17 @@ router = APIRouter()
 # create a new user
 @router.post("")
 async def createUser(user:UserCreate):
-    new_user_id = len(USERS) + 1
+    new_user_id = max((user["user_id"] for user in USERS),default=0) + 1
 
     new_user = user.model_dump()
     new_user["user_id"] = new_user_id
+
+    for existing_user in USERS:
+        if existing_user.get("username") == user.username:
+            raise HTTPException(detail="Username already exists..", status_code=status.HTTP_409_CONFLICT)
+        
     USERS.append(new_user)
-    return JSONResponse(content="User created successfully", status_code=status.HTTP_200_OK)
+    return JSONResponse(content="User created successfully", status_code=status.HTTP_201_CREATED)
 
 
 # get all other users only after you loggedIn
@@ -39,9 +44,8 @@ async def getProfile(request:Request):
 # Get/Search user by his id only after u are loggedIN 
 @router.get('/{id}', response_model=UserResponse)
 def getUser(request:Request,id:int):
-    user = getCurrentUser(request)
-    print(user)
-    if user is None:
+    current_user = getCurrentUser(request)
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     for user in USERS:

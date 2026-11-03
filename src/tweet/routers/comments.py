@@ -2,12 +2,13 @@ from fastapi import APIRouter, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from tweet.data import USERS,POSTS, COMMENTS, TOKENS
 from tweet.routers.auth import getCurrentUser
+from tweet.schemas.comments import CommentCreate, CommentResponse, CommentUpdate
 
 router = APIRouter()
 
 
 # get all comments only after user is loggedIn
-@router.get("/comments")
+@router.get("/comments", response_model=list[CommentResponse])
 def getAllComments(request:Request):
     user = getCurrentUser(request)
 
@@ -16,7 +17,7 @@ def getAllComments(request:Request):
     return COMMENTS
 
 # get comments written by me OR current loggedIn user
-@router.get("/comments/me")
+@router.get("/comments/me", response_model=list[CommentResponse])
 def getMyComments(request:Request):
     user = getCurrentUser(request)
 
@@ -31,7 +32,7 @@ def getMyComments(request:Request):
 
 
 # get all comments on my all posts
-@router.get("/me/comments/received")
+@router.get("/me/comments/received", response_model=list[CommentResponse])
 def getCommentsOnMyPosts(request:Request):
     user = getCurrentUser(request)
 
@@ -50,7 +51,7 @@ def getCommentsOnMyPosts(request:Request):
 
 
 # get all comments on my specific posts
-@router.get("/me/posts/{post_id}/comments")
+@router.get("/me/posts/{post_id}/comments", response_model=list[CommentResponse])
 def getAllCommentsOnMyPost(request:Request, post_id:int):
     user = getCurrentUser(request)
 
@@ -68,7 +69,7 @@ def getAllCommentsOnMyPost(request:Request, post_id:int):
 
 
 # get a single comment 
-@router.get("/comments/{id}")
+@router.get("/comments/{id}", response_model=CommentResponse)
 def getSpecificComment(request:Request, id:int):
     user = getCurrentUser(request)
 
@@ -82,7 +83,7 @@ def getSpecificComment(request:Request, id:int):
 
 
 # get comments written by a specific user
-@router.get("/users/{user_id}/comments")
+@router.get("/users/{user_id}/comments", response_model=list[CommentResponse])
 def getCommentsByUser(request:Request, user_id:int):
     user = getCurrentUser(request)
 
@@ -109,7 +110,7 @@ def getCommentsByUser(request:Request, user_id:int):
 
 
 # get a specific comment written by that user
-@router.get("/users/{user_id}/comments/{comment_id}")
+@router.get("/users/{user_id}/comments/{comment_id}", response_model=CommentResponse)
 def getSpecificCommentOfUser(request:Request, user_id:int, comment_id:int):
     user = getCurrentUser(request)
 
@@ -133,7 +134,7 @@ def getSpecificCommentOfUser(request:Request, user_id:int, comment_id:int):
 
 
 # get all comments on any specific posts 
-@router.get("/posts/{post_id}/comments")
+@router.get("/posts/{post_id}/comments", response_model=list[CommentResponse])
 def getAllCommentsOnAnyPost(request:Request, post_id:int):
     user = getCurrentUser(request)
 
@@ -151,7 +152,7 @@ def getAllCommentsOnAnyPost(request:Request, post_id:int):
 
 
 # get specific comment on a specific post
-@router.get("/posts/{post_id}/comments/{comment_id}")
+@router.get("/posts/{post_id}/comments/{comment_id}", response_model=CommentResponse)
 def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:int):
     user = getCurrentUser(request)
 
@@ -177,16 +178,17 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
 # TODO: add security
 # create a new comment 
 @router.post("/comments")
-async def createComment(request:Request):
+async def createComment(request:Request, comment:CommentCreate):
     user = getCurrentUser(request)
 
     if user is None:
         # return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    body = await request.json()
+    # body = await request.json()
+    new_comment = comment.model_dump()
 
-    post_id = body.get("post_id")
+    post_id = new_comment.get("post_id")
     if post_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Post Id is Required")
 
@@ -206,36 +208,31 @@ async def createComment(request:Request):
     new_comment_id = max(comment.get("comment_id") for comment in COMMENTS)+1
 
     # set the author and the comment id on the server
-    body["user_id"] = user.get("user_id")
-    body["comment_id"] = new_comment_id
+    new_comment["user_id"] = user.get("user_id")
+    new_comment["comment_id"] = new_comment_id
 
-    COMMENTS.append(body)
+    COMMENTS.append(new_comment)
 
     return JSONResponse(content="comment added successfully", status_code=status.HTTP_201_CREATED)
 
 
 # update existing comment only by the author of that comment
 @router.put("/comments/{comment_id}")
-async def updateComment(request:Request, comment_id:int):
+async def updateComment(request:Request, comment_id:int, comment:CommentUpdate):
     user = getCurrentUser(request)
 
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    for comment in COMMENTS:
+    for existing_comment in COMMENTS:
 
-        if comment.get("comment_id") == comment_id:
-            if user.get("user_id") != comment.get("user_id"):
+        if existing_comment.get("comment_id") == comment_id:
+            if user.get("user_id") != existing_comment.get("user_id"):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You does not have the permission to modify this post")
 
-            body = await request.json()
-
-            # We write these lines to prevent the user from changing the Comment Id or the owner of the post through the request body.
-            body.pop("comment_id", None)
-            body.pop("user_id", None)
-            body.pop("post_id",None)
-
-            comment.update(body)
+            # body = await request.json()
+            updated_comment = comment.model_dump()
+            existing_comment.update(updated_comment)
 
             return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
     return JSONResponse(content="Comment not exists", status_code=status.HTTP_404_NOT_FOUND)
