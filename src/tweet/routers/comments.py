@@ -16,6 +16,7 @@ def getAllComments(request:Request):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
     return COMMENTS
 
+
 # get comments written by me OR current loggedIn user
 @router.get("/comments/me", response_model=list[CommentResponse])
 def getMyComments(request:Request):
@@ -252,3 +253,5 @@ def deleteComment(request:Request, comment_id:int):
                 return JSONResponse(content="Comment Deleted..", status_code=status.HTTP_200_OK)
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You does not have the permission to delete this post")
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+
+
