@@ -83,6 +83,7 @@ def getSpecificComment(request:Request, id:int):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found..")
 
 
+
 # get comments written by a specific user
 @router.get("/users/{user_id}/comments", response_model=list[CommentResponse])
 def getCommentsByUser(request:Request, user_id:int):
