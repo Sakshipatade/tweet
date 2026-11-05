@@ -184,8 +184,7 @@ async def createComment(request:Request, comment:CommentCreate):
     if user is None:
         # return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-
-    # body = await request.json()
+    
     new_comment = comment.model_dump()
 
     post_id = new_comment.get("post_id")
