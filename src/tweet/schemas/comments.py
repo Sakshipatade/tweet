@@ -6,7 +6,6 @@ class CommentCreate(BaseModel):
 
 class CommentUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    post_id:int | None = None
     comment_content:str
 
 class CommentResponse(BaseModel):

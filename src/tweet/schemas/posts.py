@@ -5,7 +5,7 @@ class PostCreate(BaseModel):
 
 class PostUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    content:str | None = None
+    content:str
 
 class PostResponse(BaseModel):
     post_id:int

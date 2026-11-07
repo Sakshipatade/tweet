@@ -6,6 +6,45 @@ from tweet.schemas.comments import CommentCreate, CommentResponse, CommentUpdate
 
 router = APIRouter()
 
+# create a new comment 
+@router.post("/comments")
+async def createComment(request:Request, comment:CommentCreate):
+    user = getCurrentUser(request)
+
+    if user is None:
+        # return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
+    
+    new_comment = comment.model_dump()
+
+    post_id = new_comment.get("post_id")
+    if post_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Post Id is Required")
+
+    # check whether the post exists
+    # post_exits = False
+    # for post in POSTS:
+    #     if post.get("post_id") == post_id:
+    #         post_exits = True
+    #         break
+    # OR
+    post_exists = any(post.get("post_id") == post_id for post in POSTS)
+
+    if not post_exists:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
+
+    # generate new comment id
+    new_comment_id = max((comment.get("comment_id") for comment in COMMENTS),default=0)+1
+
+    # set the author and the comment id on the server
+    new_comment["user_id"] = user.get("user_id")
+    new_comment["comment_id"] = new_comment_id
+
+    COMMENTS.append(new_comment)
+
+    return JSONResponse(content="comment added successfully", status_code=status.HTTP_201_CREATED)
+
+
 
 # get all comments only after user is loggedIn
 @router.get("/comments", response_model=list[CommentResponse])
@@ -176,45 +215,6 @@ def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:in
             return comment
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found..")
 
-
-# TODO: add security
-# create a new comment 
-@router.post("/comments")
-async def createComment(request:Request, comment:CommentCreate):
-    user = getCurrentUser(request)
-
-    if user is None:
-        # return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-    
-    new_comment = comment.model_dump()
-
-    post_id = new_comment.get("post_id")
-    if post_id is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Post Id is Required")
-
-    # check whether the post exists
-    # post_exits = False
-    # for post in POSTS:
-    #     if post.get("post_id") == post_id:
-    #         post_exits = True
-    #         break
-    # OR
-    post_exists = any(post.get("post_id") == post_id for post in POSTS)
-
-    if not post_exists:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
-
-    # generate new comment id
-    new_comment_id = max(comment.get("comment_id") for comment in COMMENTS)+1
-
-    # set the author and the comment id on the server
-    new_comment["user_id"] = user.get("user_id")
-    new_comment["comment_id"] = new_comment_id
-
-    COMMENTS.append(new_comment)
-
-    return JSONResponse(content="comment added successfully", status_code=status.HTTP_201_CREATED)
 
 
 # update existing comment only by the author of that comment

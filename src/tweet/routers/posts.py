@@ -7,6 +7,29 @@ from tweet.schemas.posts import PostCreate, PostResponse, PostUpdate
 router = APIRouter()
 
 
+# create a new post by the user who is loggedIn
+@router.post("/posts")
+async def createPost(request:Request, post:PostCreate):
+    user = getCurrentUser(request)
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
+
+    # data =  await request.body()
+    # body = json.loads(data)
+    # body = await request.json()
+
+    new_post_id = max((post.get("post_id") for post in POSTS), default=0) + 1
+
+    new_post = post.model_dump()
+
+    new_post["user_id"] = user.get("user_id")
+    new_post["post_id"] = new_post_id
+    POSTS.append(new_post)
+    return JSONResponse(content="Post created successfully..", status_code=status.HTTP_201_CREATED)
+
+
+
 # getting post of loggedIn user or getting my posts 
 @router.get("/posts", response_model=list[PostResponse])
 def getMyPosts(request:Request): #authorization:str = Header(...) is for swagger UI for giving the token with the request
@@ -54,28 +77,6 @@ def deletePost(request:Request, id:int):
             else:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You does have the permission to delete this post..")
 
-
-
-# create a new post by the user who is loggedIn
-@router.post("/posts")
-async def createPost(request:Request, post:PostCreate):
-    user = getCurrentUser(request)
-
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-
-    # data =  await request.body()
-    # body = json.loads(data)
-    # body = await request.json()
-
-    new_post_id = max(post.get("post_id") for post in POSTS) + 1
-
-    new_post = post.model_dump()
-
-    new_post["user_id"] = user.get("user_id")
-    new_post["post_id"] = new_post_id
-    POSTS.append(new_post)
-    return JSONResponse(content="Post created successfully..", status_code=status.HTTP_201_CREATED)
 
 
 # update the post of the user by himself only after he is loggedIn
