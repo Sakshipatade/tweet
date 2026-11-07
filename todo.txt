@@ -5,3 +5,45 @@ Pagination – Implement limit and offset for GET /users.
 Password hashing – Learn secure password storage and verification.
 
 Testing – Test all routes using pytest and FastAPI's TestClient.
+
+1. use postgresql 
+
+2. Fix your token format
+    Currently you return:
+
+    Token-ahsyw6
+
+    but you're splitting with:
+
+    token_type, token_value = token.split("-")
+
+    That's okay for your learning project, but eventually use the normal HTTP convention:
+
+    Authorization: Bearer ahsyw6
+
+    Then you'll learn why Bearer exists and how real APIs handle authentication.
+    
+
+3. Make a proper home-feed endpoint
+    You previously wanted the logged-in user to see their posts + other users' posts.
+
+    So add:
+
+    GET /posts
+
+    It should require login and return all posts.
+
+    Later you can make the response richer:
+
+    [
+        {
+            "post_id": 1,
+            "username": "sakshi",
+            "content": "FastAPI is a framework of python",
+            "comments": [...]
+        }
+    ]
+
+    That will teach you how backend APIs combine related data.
+
+"""
