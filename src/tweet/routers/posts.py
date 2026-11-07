@@ -76,7 +76,7 @@ def deletePost(request:Request, id:int):
                 return JSONResponse(content="Post deleted successfully.", status_code=status.HTTP_200_OK)
             else:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You does have the permission to delete this post..")
-
+    raise HTTPException(detail="Post not found", status_code=status.HTTP_404_NOT_FOUND)
 
 
 # update the post of the user by himself only after he is loggedIn

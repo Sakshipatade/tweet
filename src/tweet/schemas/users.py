@@ -9,6 +9,19 @@ class UserUpdate(BaseModel):
     username:str
     password:str
 
+
+class UserPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    username:str | None = None
+    password:str | None = None
+
+
 class UserResponse(BaseModel):
     user_id:int
     username:str
+
+
+class UserPriviledgeResponse(BaseModel):
+    user_id:int
+    username:str
+    password:str

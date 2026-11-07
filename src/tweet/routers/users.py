@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from tweet.data import USERS,TOKENS
 from tweet.routers.auth import getCurrentUser
-from tweet.schemas.users import UserCreate, UserUpdate, UserResponse
+from tweet.schemas.users import UserCreate, UserUpdate, UserResponse, UserPatch, UserPriviledgeResponse
 
 router = APIRouter()
 
@@ -33,7 +33,7 @@ def getUsers(request:Request):
 
 
 # getting profile of himself of the user who is logged In
-@router.get("/profile", response_model=UserResponse)
+@router.get("/profile", response_model=UserPriviledgeResponse)
 async def getProfile(request:Request):
     user = getCurrentUser(request)
     if user is None:
@@ -101,3 +101,37 @@ async def updateUser(request:Request, id:int, user:UserUpdate):
 
     return JSONResponse(content="User record updated successfully.", status_code= status.HTTP_200_OK)
 
+# update only inputed field
+@router.patch("/{id}")
+def updateSpecificField(request:Request, id:int, user:UserPatch):
+    current_user = getCurrentUser(request)
+    
+    if current_user is None:
+        raise HTTPException(detail = "User is not authorized", status_code=status.HTTP_401_UNAUTHORIZED)
+
+
+    if current_user.get("user_id") != id:
+        raise HTTPException(detail="You are not allowed to update this.", status_code=status.HTTP_403_FORBIDDEN)
+    
+    updated_user = user.model_dump(exclude_unset=True)
+
+    if not updated_user:
+        raise HTTPException(detail="No fields provided to update", status_code=status.HTTP_400_BAD_REQUEST)
+
+    for field,value in updated_user.items():
+        if value == " " or value is None:
+            raise HTTPException(detail=f'{field} cannot be empty', status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
+
+    changes = {
+        field:value
+        for field,value in updated_user.items() 
+        if current_user.get('field') != value
+    } 
+
+    if not changes:
+        return { "Message":"No changes detected"}
+    
+    current_user.update(changes)
+    return JSONResponse(content="User updated successfully..", status_code=status.HTTP_200_OK)
+
+    
