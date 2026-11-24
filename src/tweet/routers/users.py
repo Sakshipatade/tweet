@@ -1,44 +1,55 @@
-from fastapi import APIRouter, Request, status, HTTPException
+from fastapi import APIRouter, Request, status, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from tweet.data import USERS,TOKENS
 from tweet.routers.auth import getCurrentUser
 from tweet.pydanticschemas.users import UserCreate, UserUpdate, UserResponse, UserPatch, UserPriviledgeResponse
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from tweet.database import get_db
+from tweet.models.user import User
+
+from typing import Annotated
+
 router = APIRouter()
 
+dbSession = Annotated[Session, Depends(get_db)]
 
 # create a new user
 @router.post("")
-async def createUser(user:UserCreate):
-    new_user_id = max((user["user_id"] for user in USERS),default=0) + 1
+async def createUser(user:UserCreate, db:dbSession):
+    existing_user = db.scalar(select(User).where(user.username==User.username))
 
-    new_user = user.model_dump()
-    new_user["user_id"] = new_user_id
+    if existing_user:
+        raise HTTPException(detail="User already exists!", status_code=status.HTTP_409_CONFLICT)
 
-    for existing_user in USERS:
-        if existing_user.get("username") == user.username:
-            raise HTTPException(detail="Username already exists..", status_code=status.HTTP_409_CONFLICT)
-        
-    USERS.append(new_user)
+    new_user = User(username = user.username, password = user.password)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     return JSONResponse(content="User created successfully", status_code=status.HTTP_201_CREATED)
 
 
 # get all other users only after you loggedIn
 @router.get("", response_model = list[UserResponse])
-def getUsers(request:Request):
+def getUsers(request:Request, db:dbSession):
     user = getCurrentUser(request)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-    return USERS
+    users = db.scalars(select(User)).all()
+    return users
 
 
 # getting profile of himself of the user who is logged In
 @router.get("/profile", response_model=UserPriviledgeResponse)
-async def getProfile(request:Request):
+async def getProfile(request:Request, db:dbSession):
     user = getCurrentUser(request)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-    return user
+
+    current_user = db.scalar(select(User).where(user.get("user_id")==User.user_id))
+    return current_user
 
 
 # Get/Search user by his id only after u are loggedIN 
