@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from tweet.data import USERS,POSTS, COMMENTS, TOKENS
 from tweet.routers.auth import getCurrentUser
-from tweet.schemas.posts import PostCreate, PostResponse, PostUpdate
+from tweet.pydanticschemas.posts import PostCreate, PostResponse, PostUpdate
 
 router = APIRouter()
 

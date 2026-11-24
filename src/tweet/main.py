@@ -1,8 +1,11 @@
-from fastapi import FastAPI, status, Request, Body,HTTPException
-from fastapi.responses import JSONResponse
-from tweet.data import USERS, COMMENTS, POSTS, TOKENS
 import json, random, string
+from fastapi import FastAPI, status, Request, Body,HTTPException, Depends
+from fastapi.responses import JSONResponse
+from tweet.data import USERS, POSTS, TOKENS
 from tweet.routers import users,posts,comments
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from tweet.database import get_db
 
 
 app = FastAPI()
@@ -12,7 +15,11 @@ app.include_router(users.router, tags=["Users"], prefix= "/users")
 app.include_router(posts.router, tags=["Posts"])
 app.include_router(comments.router, tags=["Comments"])
 
-
+@app.get("/db-test")
+def test_db(db: Session = Depends(get_db)):
+    result = db.execute(text("SELECT current_database()"))
+    database_name = result.scalar()
+    return {"database": database_name}
 
 # login
 @app.post("/login")

@@ -1,7 +1,7 @@
 import os 
 from dotenv import load_dotenv
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 load_dotenv() #loaded .env file
@@ -21,6 +21,11 @@ SessionLocal = sessionmaker(
     ) #it creates db sessions using the engine
 
 
-with engine.connect() as connection:
-    result = connection.execute(text("SELECT 1"))
-    print(result.scalar())
+def get_db():
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
+
