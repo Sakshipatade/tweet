@@ -24,4 +24,3 @@ class UserResponse(BaseModel):
 class UserPriviledgeResponse(BaseModel):
     user_id:int
     username:str
-    password:str
