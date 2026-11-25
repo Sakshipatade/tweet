@@ -12,8 +12,8 @@ class UserUpdate(BaseModel):
 
 class UserPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    username:str | None = None
-    password:str | None = None
+    username:str | None = None #it allows partial updates
+    password:str | None = None #it allows partial updates
 
 
 class UserResponse(BaseModel):
