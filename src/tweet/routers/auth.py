@@ -1,8 +1,18 @@
-from fastapi import APIRouter, Request
-from tweet.data import USERS,TOKENS
+from fastapi import Request, Depends
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from typing import Annotated
+
+from tweet.database import get_db
+from tweet.data import TOKENS
+from tweet.models.user import User
+
+
+
+dbSession = Annotated[Session, Depends(get_db)]
 
 # Authentication logic
-def getCurrentUser(request:Request):
+def getCurrentUser(request:Request, db:dbSession):
     # if AuthHeader is not None:
     #     token = AuthHeader
     # else:
@@ -26,10 +36,7 @@ def getCurrentUser(request:Request):
     # finding the token
     for tk in TOKENS:
         if tk.get("token") == token_id:
-
-            #getting the user associated with that token
-            for user in USERS:
-                if user.get("user_id") == tk.get("user_id"):
-                    return user 
+            user = db.scalar(select(User).where(User.user_id == tk.get("user_id")))
+            return user
     return None
 # this method tells -> This request is coming from user x and the request is authenticated
