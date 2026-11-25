@@ -49,12 +49,4 @@ def loginUser(db:dbSession,username:str=Body(...), password:str = Body(...)):
     return JSONResponse(content={"msg":"login successful", "token": f'Token-{token}'}, status_code=status.HTTP_200_OK)
        
 
-# getting all posts
-@app.get("/posts")
-def getAllPosts(request:Request):
-    user = getCurrentUser(request)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-    return POSTS
-
 
