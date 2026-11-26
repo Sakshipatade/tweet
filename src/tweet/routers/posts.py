@@ -42,7 +42,7 @@ def createPost(post:PostCreate,db:dbSession,current_user:User | None = Depends(g
         db.refresh(new_post)
     except SQLAlchemyError as exc:
         db.rollback()
-        raise HTTPException("Failed to create Post", status_code= status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
+        raise HTTPException(detail="Failed to create Post", status_code= status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
     
     return JSONResponse(content="Post created successfully..", status_code=status.HTTP_201_CREATED)
 
@@ -72,11 +72,6 @@ def getMyPosts(db:dbSession, current_user:User|None=Depends(getCurrentUser)): #a
     
     return posts
 
-    # user_posts = []
-    # for post in POSTS:
-    #     if post.get("user_id") == user.get("user_id"):
-    #         user_posts.append(post)
-    # return user_posts
 
 
 # getting all posts of specified user
@@ -96,11 +91,7 @@ def getUserPosts(user_id:int, db:dbSession, current_user:User|None=Depends(getCu
         raise HTTPException(detail="This user has not posted yet.", status_code=status.HTTP_404_NOT_FOUND)
     
     return posts
-    # user_posts = []
-    # for post in POSTS:
-    #     if post.get("user_id") == user_id:
-    #         user_posts.append(post)
-    # return user_posts
+
 
 
 # get all posts on which i have commented or loggedIn user commented
@@ -127,18 +118,6 @@ def getPostsOnUserCommented(db:dbSession,current_user:User|None=Depends(getCurre
 
     return posts
 
-    # all_posts = []
-    # for comment in COMMENTS:
-    #     if comment.get("user_id") == user.get("user_id"):
-    #         for post in POSTS:
-    #             if post.get("post_id") == comment.get("post_id"):
-    #                 if post not in all_posts:
-    #                     all_posts.append(post)
-
-    # return all_posts
-
-
-
 # get specific post which i have commmented
 @router.get("/me/commented_posts/{post_id}", response_model=PostResponse)
 def getPostOnICommented(post_id:int,db:dbSession, current_user:User|None=Depends(getCurrentUser)):
@@ -159,12 +138,41 @@ def getPostOnICommented(post_id:int,db:dbSession, current_user:User|None=Depends
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="You have not commented on any posts yet")
 
     return post
-    # for comment in COMMENTS:
-    #     if comment.get("user_id") == user.get("user_id") and comment.get("post_id") == post_id:
-    #         for post in POSTS:
-    #             if post_id == post.get("post_id"):
-    #                 return post
-    # raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found or You are not commented on the post")
+
+
+# update the post of the user by himself only after he is loggedIn
+@router.put("/posts/{post_id}")
+def updatePost(post_id:int, post:PostUpdate, db:dbSession, current_user:User|None=Depends(getCurrentUser)):
+
+
+    if current_user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
+
+    try:
+        existing_post = db.scalar(select(Post).where(Post.post_id==post_id))
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve the post", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
+
+    if existing_post is None:
+        raise HTTPException(detail="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+
+    if existing_post.user_id != current_user.user_id:
+        raise HTTPException(detail="You are not allowed to update this post", status_code=status.HTTP_403_FORBIDDEN)
+
+    updated_post = post.model_dump()
+
+    for key,value in updated_post.items():
+        setattr(existing_post,key,value)
+    try:
+        db.commit()
+        db.refresh(existing_post)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(detail="failed to update the post", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
+
+
+    return JSONResponse(content="Post updated Successfully", status_code=status.HTTP_200_OK)
+   
 
 # deleting post of the user who is loggedIn
 @router.delete("/posts/{id}")
@@ -191,64 +199,3 @@ def deletePost(id:int, db:dbSession, current_user:User|None=Depends(getCurrentUs
         raise HTTPException(detail="Database failed to delete the post",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
 
     return JSONResponse(content="Post deleted successfully", status_code=status.HTTP_200_OK)
-
-    # for post in POSTS:
-    #     if post.get("post_id") == id:
-    #         if post.get("user_id") == user.get("user_id"):
-    #             POSTS.remove(post)
-    #             return JSONResponse(content="Post deleted successfully.", status_code=status.HTTP_200_OK)
-    #         else:
-    #             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You does have the permission to delete this post..")
-    # raise HTTPException(detail="Post not found", status_code=status.HTTP_404_NOT_FOUND)
-
-
-# update the post of the user by himself only after he is loggedIn
-@router.put("/posts/{post_id}")
-def updatePost(post_id:int, post:PostUpdate, db:dbSession, current_user:User|None=Depends(getCurrentUser)):
-
-
-    if current_user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-
-    try:
-        existing_post = db.scalar(select(Post).where(Post.post_id==post_id))
-    except SQLAlchemyError as exc:
-        raise HTTPException(detail="Failed to retrieve the post", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
-
-    if existing_post is None:
-        raise HTTPException(detail="Post not found", status_code=status.HTTP_404_NOT_FOUND)
-
-    if existing_post.user_id != current_user.user_id:
-        raise HTTPException(detail="You are not allowed to update this post", status_code=status.HTTP_409_CONFLICT)
-
-    updated_post = post.model_dump()
-
-    for key,value in updated_post.items():
-        setattr(existing_post,key,value)
-    try:
-        db.commit()
-        db.refresh(existing_post)
-    except SQLAlchemyError as exc:
-        db.rollback()
-        raise HTTPException(detail="failed to update the user", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
-
-
-    return JSONResponse(content="Post updated Successfully", status_code=status.HTTP_200_OK)
-    # for existing_post in POSTS:
-    #     if existing_post.get("post_id") == post_id:
-
-    #         if existing_post.get("user_id") != user.get("user_id"):
-    #             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You does not have the permission to modify this post")
-
-
-    #         # body = await request.json()
-    #         # # We write these two lines to prevent the user from changing the post ID or the owner of the post through the request body.
-    #         # body.pop("post_id", None)
-    #         # body.pop("user_id", None)
-
-    #         updated_post = post.model_dump()
-    #         existing_post.update(updated_post)
-    #         return JSONResponse(content="Post updated sucessfully..", status_code=status.HTTP_200_OK)
-        
-    # raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
-
