@@ -6,16 +6,6 @@ Password hashing – Learn secure password storage and verification.
 Testing – Test all routes using pytest and FastAPI's TestClient.
 
 
-Implement pagination for users, posts and comments.
-
-Implement password hashing using Argon2.
-
-Test all CRUD endpoints using pytest and TestClient.
-
-Start PostgreSQL integration with SQLAlchemy.
-
-1. use postgresql 
-
 2. Fix your token format
     Currently you return:
 
@@ -55,5 +45,4 @@ Start PostgreSQL integration with SQLAlchemy.
     That will teach you how backend APIs combine related data.
 
 """
-
-dependency injections and middleware,
+4. make use of middleware,
