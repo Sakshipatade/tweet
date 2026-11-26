@@ -1,258 +1,324 @@
-from fastapi import APIRouter, Request, status, HTTPException
+from fastapi import APIRouter, Request, status, HTTPException, Depends
 from fastapi.responses import JSONResponse
-from tweet.data import USERS,POSTS, COMMENTS, TOKENS
+from tweet.data import USERS,POSTS, COMMENTS
 from tweet.routers.auth import getCurrentUser
 from tweet.pydanticschemas.comments import CommentCreate, CommentResponse, CommentUpdate
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+
+from tweet.database import get_db
+from tweet.models.user import User
+from tweet.models.comment import Comment
+from tweet.models.post import Post
+
+from typing import Annotated
+
 router = APIRouter()
+
+dbSession = Annotated[Session, Depends(get_db)]
 
 # create a new comment 
 @router.post("/comments")
-async def createComment(request:Request, comment:CommentCreate):
-    user = getCurrentUser(request)
+def createComment(comment:CommentCreate, db:dbSession, current_user:User|None = Depends(getCurrentUser)):
 
-    if user is None:
-        # return JSONResponse(content="You are unauthorized", status_code=status.HTTP_401_UNAUTHORIZED)
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
+
+    new_comment =Comment(
+        user_id = current_user.user_id,
+        post_id = comment.post_id,
+        comment_content = comment.comment_content)
+
+    try:
+        db.add(new_comment)
+        db.commit()
+        db.refresh(new_comment)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(detail="Failed to create Post", status_code= status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
     
-    new_comment = comment.model_dump()
-
-    post_id = new_comment.get("post_id")
-    if post_id is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Post Id is Required")
-
-    # check whether the post exists
-    # post_exits = False
-    # for post in POSTS:
-    #     if post.get("post_id") == post_id:
-    #         post_exits = True
-    #         break
-    # OR
-    post_exists = any(post.get("post_id") == post_id for post in POSTS)
-
-    if not post_exists:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
-
-    # generate new comment id
-    new_comment_id = max((comment.get("comment_id") for comment in COMMENTS),default=0)+1
-
-    # set the author and the comment id on the server
-    new_comment["user_id"] = user.get("user_id")
-    new_comment["comment_id"] = new_comment_id
-
-    COMMENTS.append(new_comment)
-
-    return JSONResponse(content="comment added successfully", status_code=status.HTTP_201_CREATED)
+    return JSONResponse(content="Comment created successfully..", status_code=status.HTTP_201_CREATED)
 
 
 
 # get all comments only after user is loggedIn
 @router.get("/comments", response_model=list[CommentResponse])
-def getAllComments(request:Request):
-    user = getCurrentUser(request)
+def getAllComments(db:dbSession, current_user:User|None = Depends(getCurrentUser)):
 
-    if user is None:
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
-    return COMMENTS
+
+    try:
+        comments = db.scalars(select(Comment)).all()
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
+
+    if not comments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comments not found")
+    
+    return comments
 
 
 # get comments written by me OR current loggedIn user
 @router.get("/comments/me", response_model=list[CommentResponse])
-def getMyComments(request:Request):
-    user = getCurrentUser(request)
+def getMyComments(db:dbSession, current_user:User|None = Depends(getCurrentUser)):
 
-    if user is None:
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    all_comments = []
-    for comment in COMMENTS:
-        if comment.get("user_id") == user.get("user_id"):
-            all_comments.append(comment)
-    return all_comments
+    try:
+        comments = db.scalars(select(Comment).where(Comment.user_id==current_user.user_id)).all()
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
+
+    if not comments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comments not found")
+ 
+    return comments
+
 
 
 # get all comments on my all posts
 @router.get("/me/comments/received", response_model=list[CommentResponse])
-def getCommentsOnMyPosts(request:Request):
-    user = getCurrentUser(request)
+def getCommentsOnMyPosts(db:dbSession, current_user:User|None = Depends(getCurrentUser)):
 
-    if user is None:
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    all_comments = []
-
-    for post in POSTS:
-        if user.get("user_id") == post.get("user_id"):
-            for comment in COMMENTS:
-                if post.get("post_id") == comment.get("post_id"):
-                    all_comments.append(comment)
-    return all_comments
+    try:
+        comments = db.scalars(select
+        (Comment)
+        .join(Post, Post.post_id==Comment.post_id)
+        .where(Post.user_id == current_user.user_id)
+        ).all()
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
+    
+    if not comments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="You have not received any comment yet")
+ 
+    return comments
 
 
 
 # get all comments on my specific posts
 @router.get("/me/posts/{post_id}/comments", response_model=list[CommentResponse])
-def getAllCommentsOnMyPost(request:Request, post_id:int):
-    user = getCurrentUser(request)
-
-    if user is None:
+def getAllCommentsOnMyPost(post_id:int,db:dbSession, current_user:User|None = Depends(getCurrentUser)):
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    all_comments = []
-    for post in POSTS:
-        if post.get("user_id") == user.get("user_id") and post.get("post_id") == post_id:
-            for comment in COMMENTS:
-                if comment.get("post_id") == post_id:
-                    all_comments.append(comment)
-            return all_comments
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
+    try:
+        existing_post = db.scalar(select(Post)
+        .where (
+            Post.post_id == post_id,
+            Post.user_id == current_user.user_id
+        ))
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve post", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
+    
+    if existing_post is None:
+        raise HTTPException(detail="Post not found", status_code=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        comments = db.scalars(select(Comment).where(Comment.post_id == post_id)).all()
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
+    
+    if not comments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comments not found")
+ 
+    return comments
+
 
 
 # get a single comment 
 @router.get("/comments/{id}", response_model=CommentResponse)
-def getSpecificComment(request:Request, id:int):
-    user = getCurrentUser(request)
+def getSpecificComment(id:int, db:dbSession, current_user:User|None = Depends(getCurrentUser)):
 
-    if user is None:
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    for comment in COMMENTS:
-        if comment.get("comment_id") == id:
-            return comment
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found..")
+    try:
+        comment = db.scalar(select(Comment).where(Comment.comment_id == id))
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve comment", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
 
-
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comments not found")
+    return comment
+ 
 
 # get comments written by a specific user
 @router.get("/users/{user_id}/comments", response_model=list[CommentResponse])
-def getCommentsByUser(request:Request, user_id:int):
-    user = getCurrentUser(request)
+def getCommentsByUser(user_id:int,db:dbSession, current_user:User|None = Depends(getCurrentUser)):
 
-    if user is None:
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    requested_user = None
+    user = db.scalar(select(User). where(User.user_id == user_id))
 
-    for user in USERS:
-        if user.get("user_id") == user_id:
-            requested_user = user
-            break
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
 
-    if requested_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found..")
 
-    
-    user_comments = []
-    for comment in COMMENTS:
-        if comment.get("user_id") == user_id:
-            user_comments.append(comment)
-    return user_comments
+    try:
+        comments = db.scalars(select(Comment).where(Comment.user_id == user_id)).all()
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
 
+    if not comments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="This user has not written any comments yet")
+    return comments
 
 
 # get a specific comment written by that user
 @router.get("/users/{user_id}/comments/{comment_id}", response_model=CommentResponse)
-def getSpecificCommentOfUser(request:Request, user_id:int, comment_id:int):
-    user = getCurrentUser(request)
+def getSpecificCommentOfUser(user_id:int, comment_id:int, db:dbSession, current_user:User|None = Depends(getCurrentUser)):
 
-    if user is None:
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    requested_user = None
+    try:
+        searched_user = db.scalar(select(User).where(User.user_id == user_id))
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Failed to retrieve user") from exc
 
-    for user in USERS:
-        if user.get("user_id") == user_id:
-            requested_user = user
-            break
+    if searched_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
 
-    if requested_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found..")
 
-    for comment in COMMENTS:
-        if comment.get("user_id") == user_id and comment.get("comment_id") == comment_id:
-            return comment
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found..")
+    try:
+        comment = db.scalar(select(Comment).where(Comment.comment_id == comment_id, Comment.user_id == user_id))
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Failed to retrieve comment") from exc
+
+    if comment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comment not found")
+
+    return comment
+    
 
 
 # get all comments on any specific posts 
 @router.get("/posts/{post_id}/comments", response_model=list[CommentResponse])
-def getAllCommentsOnAnyPost(request:Request, post_id:int):
-    user = getCurrentUser(request)
-
-    if user is None:
+def getAllCommentsOnAnyPost(post_id:int, db:dbSession, current_user:User|None = Depends(getCurrentUser)):
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
+    try:
+        post = db.scalar(
+            select(Post).where(Post.post_id == post_id)
+        )
+    except SQLAlchemyError as exc:
+       raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Failed to retrieve post") from exc 
+
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Post not found")
     
-    for post in POSTS:
-        if post.get("post_id") == post_id:
-            all_comments = []
-            for comment in COMMENTS:
-                if comment.get("post_id") == post_id:
-                    all_comments.append(comment)
-            return all_comments
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
+    try:
+        comments = db.scalars(select(Comment).where(
+            Comment.post_id == post_id
+        )).all()
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Failed to retrieve comments") from exc
+
+    return comments
 
 
 # get specific comment on a specific post
 @router.get("/posts/{post_id}/comments/{comment_id}", response_model=CommentResponse)
-def getSpecificCommentOfSpecificPost(request:Request, post_id:int, comment_id:int):
-    user = getCurrentUser(request)
+def getSpecificCommentOfSpecificPost(post_id:int, comment_id:int,db:dbSession, current_user:User|None = Depends(getCurrentUser)):
 
-    if user is None:
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    post_exists = False
+    searched_post = db.scalar(select(Post).where(Post.post_id == post_id))
 
-    for post in POSTS:
-        if post.get("post_id") == post_id:
-            post_exists = True
-            break
+    if searched_post is None:
+        raise HTTPException(detail="Post not found", status_code=status.HTTP_404_NOT_FOUND)
 
-    if not post_exists:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found..")
-
-    for comment in COMMENTS:
-        if comment.get("comment_id") == comment_id and comment.get("post_id") == post_id:
-            return comment
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found..")
-
-
+    try:
+        comment = db.scalar(select(Comment).where(
+            Comment.post_id == searched_post.post_id,
+            Comment.comment_id == comment_id
+        ))
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Failed to retrieve comment") from exc
+    
+    if comment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comment not found on this post")
+    
+    return comment
 
 # update existing comment only by the author of that comment
-@router.put("/comments/{comment_id}")
-async def updateComment(request:Request, comment_id:int, comment:CommentUpdate):
-    user = getCurrentUser(request)
-
-    if user is None:
+@router.put("/comments/{comment_id}", response_model=list[CommentUpdate])
+def updateComment(comment_id:int, comment:CommentUpdate, db:dbSession, current_user:User|None = Depends(getCurrentUser)):
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    for existing_comment in COMMENTS:
+    try:
+        existing_comment = db.scalar(select(Comment).where(Comment.comment_id==comment_id))
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve the comment from database", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
 
-        if existing_comment.get("comment_id") == comment_id:
-            if user.get("user_id") != existing_comment.get("user_id"):
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You does not have the permission to modify this post")
+    if existing_comment is None:
+        raise HTTPException(detail="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
 
-            # body = await request.json()
-            updated_comment = comment.model_dump()
-            existing_comment.update(updated_comment)
+    if existing_comment.user_id != current_user.user_id:
+        raise HTTPException(detail="You are not allowed to update this post", status_code=status.HTTP_403_FORBIDDEN)
 
-            return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
-    return JSONResponse(content="Comment not exists", status_code=status.HTTP_404_NOT_FOUND)
+    updated_comment = comment.model_dump()
+
+    for key,value in updated_comment.items():
+        setattr(existing_comment,key,value)
+    try:
+        db.commit()
+        db.refresh(existing_comment)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(detail="failed to update the comment", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
+
+
+    return JSONResponse(content="Comment updated Successfully", status_code=status.HTTP_200_OK)
+
+
+    # for existing_comment in COMMENTS:
+
+    #     if existing_comment.get("comment_id") == comment_id:
+    #         if user.get("user_id") != existing_comment.get("user_id"):
+    #             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You does not have the permission to modify this post")
+
+    #         # body = await request.json()
+    #         updated_comment = comment.model_dump()
+    #         existing_comment.update(updated_comment)
+
+    #         return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
+    # return JSONResponse(content="Comment not exists", status_code=status.HTTP_404_NOT_FOUND)
 
 
 # delete a comment 
 @router.delete("/comments/{comment_id}")
-def deleteComment(request:Request, comment_id:int):
-    user = getCurrentUser(request)
-
-    if user is None:
+def deleteComment(comment_id:int,db:dbSession, current_user:User|None = Depends(getCurrentUser)):
+    if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
-    for comment in COMMENTS:
-        if comment.get("comment_id") == comment_id:
-            if comment.get("user_id") == user.get("user_id"):
-                COMMENTS.remove(comment)
-                return JSONResponse(content="Comment Deleted..", status_code=status.HTTP_200_OK)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "You does not have the permission to delete this post")
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    try:
+        comment = db.scalar(select(Comment).where(Comment.comment_id==comment_id))
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
 
+    if comment is None:
+        raise HTTPException(detail="Comment not found", status_code=status.HTTP_404_NOT_FOUND)
 
+    if comment.user_id != current_user.user_id:
+        raise HTTPException(detail="You are not allowed to delete this post", status_code=status.HTTP_403_FORBIDDEN)
+
+    try:
+        db.delete(comment)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(detail="Database failed to delete the post",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
+        
+    return JSONResponse(content="Comment deleted successfully", status_code=status.HTTP_200_OK) 
