@@ -10,6 +10,7 @@ from typing import Annotated
 from tweet.database import get_db
 from tweet.data import TOKENS
 from tweet.models.user import User
+from tweet.security import verifyPassword
 
 router = APIRouter()
 
@@ -17,9 +18,7 @@ dbSession = Annotated[Session, Depends(get_db)]
 
 # Authentication logic
 def getCurrentUser(request:Request, db:dbSession):
-    # if AuthHeader is not None:
-    #     token = AuthHeader
-    # else:
+
     token = request.headers.get("Authorization")
 
     # checking if the header is missing 
@@ -40,7 +39,10 @@ def getCurrentUser(request:Request, db:dbSession):
     # finding the token
     for tk in TOKENS:
         if tk.get("token") == token_id:
-            user = db.scalar(select(User).where(User.user_id == tk.get("user_id")))
+            try:
+                user = db.scalar(select(User).where(User.user_id == tk.get("user_id")))
+            except SQLAlchemyError as exc:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail="Failed to retrieve authenticated user") from exc
             return user
     return None
 # this method tells -> This request is coming from user x and the request is authenticated
@@ -56,7 +58,7 @@ def loginUser(db:dbSession,username:str=Body(...), password:str = Body(...)):
     if user is None:
         raise HTTPException(detail="User not found", status_code=status.HTTP_404_NOT_FOUND)
 
-    if user.password != password:
+    if not verifyPassword(user.password, password):
         raise HTTPException(detail="Invalid Password", status_code=status.HTTP_400_BAD_REQUEST)
 
     token = ''.join(random.choices(string.ascii_letters + string.digits, k=6)) #generating random token
