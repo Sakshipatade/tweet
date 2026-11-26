@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from tweet.data import TOKENS
 from tweet.routers.auth import getCurrentUser
 from tweet.pydanticschemas.users import UserCreate, UserUpdate, UserResponse, UserPatch, UserPriviledgeResponse
+from tweet.security import hashPassword
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -28,7 +29,9 @@ def createUser(user:UserCreate, db:dbSession):
     if existing_user:
         raise HTTPException(detail="User already exists!", status_code=status.HTTP_409_CONFLICT)
 
-    new_user = User(username = user.username, password = user.password)
+    new_user = User(
+        username = user.username,
+        password = hashPassword(user.password))
 
     try:
         db.add(new_user)
