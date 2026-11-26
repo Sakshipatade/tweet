@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Request, status, HTTPException, Depends
+from fastapi import APIRouter, status, HTTPException, Depends
 from fastapi.responses import JSONResponse
-from tweet.data import USERS,POSTS, COMMENTS
 from tweet.routers.auth import getCurrentUser
 from tweet.pydanticschemas.comments import CommentCreate, CommentResponse, CommentUpdate
 
@@ -56,7 +55,7 @@ def getAllComments(db:dbSession, current_user:User|None = Depends(getCurrentUser
         raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
 
     if not comments:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comments not found")
+        return JSONResponse(content={"message": "No comments found."},status_code=status.HTTP_200_OK)
     
     return comments
 
@@ -74,7 +73,7 @@ def getMyComments(db:dbSession, current_user:User|None = Depends(getCurrentUser)
         raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
 
     if not comments:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comments not found")
+        return JSONResponse(content={"message": "No comments found."},status_code=status.HTTP_200_OK)
  
     return comments
 
@@ -97,7 +96,7 @@ def getCommentsOnMyPosts(db:dbSession, current_user:User|None = Depends(getCurre
         raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
     
     if not comments:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="You have not received any comment yet")
+        return JSONResponse(content={"message": "No comments found."},status_code=status.HTTP_200_OK)
  
     return comments
 
@@ -127,7 +126,7 @@ def getAllCommentsOnMyPost(post_id:int,db:dbSession, current_user:User|None = De
         raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
     
     if not comments:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Comments not found")
+        return JSONResponse(content={"message": "No comments found."},status_code=status.HTTP_200_OK)
  
     return comments
 
@@ -169,7 +168,8 @@ def getCommentsByUser(user_id:int,db:dbSession, current_user:User|None = Depends
         raise HTTPException(detail="Failed to retrieve comments", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR) from exc
 
     if not comments:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="This user has not written any comments yet")
+        raise JSONResponse(status_code=status.HTTP_404_NOT_FOUND,content="This user has not written any comments yet")
+    
     return comments
 
 
@@ -252,7 +252,7 @@ def getSpecificCommentOfSpecificPost(post_id:int, comment_id:int,db:dbSession, c
     return comment
 
 # update existing comment only by the author of that comment
-@router.put("/comments/{comment_id}", response_model=list[CommentUpdate])
+@router.put("/comments/{comment_id}", response_model=list[CommentResponse])
 def updateComment(comment_id:int, comment:CommentUpdate, db:dbSession, current_user:User|None = Depends(getCurrentUser)):
     if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
@@ -280,21 +280,7 @@ def updateComment(comment_id:int, comment:CommentUpdate, db:dbSession, current_u
         raise HTTPException(detail="failed to update the comment", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
 
 
-    return JSONResponse(content="Comment updated Successfully", status_code=status.HTTP_200_OK)
-
-
-    # for existing_comment in COMMENTS:
-
-    #     if existing_comment.get("comment_id") == comment_id:
-    #         if user.get("user_id") != existing_comment.get("user_id"):
-    #             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You does not have the permission to modify this post")
-
-    #         # body = await request.json()
-    #         updated_comment = comment.model_dump()
-    #         existing_comment.update(updated_comment)
-
-    #         return JSONResponse(content="Comment updated successfully", status_code=status.HTTP_200_OK)
-    # return JSONResponse(content="Comment not exists", status_code=status.HTTP_404_NOT_FOUND)
+    return existing_comment
 
 
 # delete a comment 

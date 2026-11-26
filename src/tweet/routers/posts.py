@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Request, status, HTTPException,Depends
+from fastapi import APIRouter,status, HTTPException,Depends
 from fastapi.responses import JSONResponse
-from tweet.data import POSTS, COMMENTS
 from tweet.routers.auth import getCurrentUser
 from tweet.pydanticschemas.posts import PostCreate, PostResponse, PostUpdate
 
@@ -82,9 +81,17 @@ def getUserPosts(user_id:int, db:dbSession, current_user:User|None=Depends(getCu
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User is Unauthorized")
 
     try:
-        posts = db.scalars(select(Post).where(Post.user_id==user_id)).all()
+        searched_user = db.scalar(select(User).where(User.user_id == user_id))
     except SQLAlchemyError as exc:
         raise HTTPException(detail="Database failed to retrieve the user",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
+
+    if searched_user is None:
+        raise HTTPException(detail="Searched User not found..",status_code=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        posts = db.scalars(select(Post).where(Post.user_id==user_id)).all()
+    except SQLAlchemyError as exc:
+        raise HTTPException(detail="Database failed to retrieve the Post",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)from exc
 
 
     if not posts:
