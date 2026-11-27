@@ -1,4 +1,4 @@
-import random, string
+import secrets
 from fastapi import Request, Depends,Body, status,APIRouter
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
@@ -26,14 +26,14 @@ def getCurrentUser(request:Request, db:dbSession):
         return None
 
     # checking if the format is correct
-    parts = token.split("-")
+    parts = token.split()
 
     if len(parts) != 2:
         return None
 
     token_type, token_id = parts
 
-    if token_type != "Token" or not token_id:
+    if token_type != "Bearer" or not token_id:
         return None
 
     # finding the token
@@ -61,7 +61,8 @@ def loginUser(db:dbSession,username:str=Body(...), password:str = Body(...)):
     if not verifyPassword(user.password, password):
         raise HTTPException(detail="Invalid Password", status_code=status.HTTP_400_BAD_REQUEST)
 
-    token = ''.join(random.choices(string.ascii_letters + string.digits, k=6)) #generating random token
+    # token = ''.join(random.choices(string.ascii_letters + string.digits, k=6)) #generating random token
+    token = secrets.token_urlsafe(32)
 
                 # checking if there is any previous token assigned to that user, if yes removing that token
                 # for tk in TOKENS:
@@ -73,7 +74,7 @@ def loginUser(db:dbSession,username:str=Body(...), password:str = Body(...)):
 
     # appending new token
     TOKENS.append({"token":token, "user_id":user.user_id})
-    return JSONResponse(content={"msg":"login successful", "token": f'Token-{token}'}, status_code=status.HTTP_200_OK)
+    return JSONResponse(content={"msg":"login successful", "token": f'Bearer {token}'}, status_code=status.HTTP_200_OK)
        
 
 
